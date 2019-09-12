@@ -3,3 +3,7 @@ env
 
 # python trash files
 __*
+
+# trash dev files
+__init__.py
+*.log
