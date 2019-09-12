@@ -1,8 +1,6 @@
 # 447-Team4
 
-Running the front-end server
-Navigate to crime-visualizer directory
+#TODO: write what this project is about
 
-Type "npm start"
-
-Go to localhost:3000 on browser
+###See frontend/README.md for running the front end
+###See backend/README.md for running the back end
