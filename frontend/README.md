@@ -1,9 +1,9 @@
-#Dependancies:
+## Dependancies:
 
  * npm version 9
  * npm package: react-scripts
  
- #Building front end in windows
+ ## Building front end in windows
  
  1. install node v9
  
@@ -25,7 +25,7 @@
     
  You should now be ready to run the front end.
  
-#Running the front-end
+## Running the front-end
 
 Change directory to `frontend/crime-visualizer`:
 
@@ -35,7 +35,7 @@ Run the server:
 
   `npm start`
 
-#Test the frontend
+## Test the frontend
 
 Front end is deployed to `localhost:3000`
 
