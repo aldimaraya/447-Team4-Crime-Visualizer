@@ -28,9 +28,25 @@
      
   3. Install requirements with `pip3 install -r requirements.txt`
   
-  4. Run the flask server with
+  4. Deactivate the virtual environment with `deactivate`
   
-    `python3 application.py`
+## Running the backend
+
+  1. Activate the python virtual environment
+     
+     On windows: Run `.\env\Scripts\activate`
+  
+     On linuxtype: Run `env/bin/activate`
+     
+  2. Run the flask server
+    `python application.py`
+    or `python3 application.py`
+    
+  3. ctrl+c to quit the server
+  
+  4. Exit the python virtual environment
+
+     `deactivate`
   
   
  
