@@ -15,9 +15,9 @@
     
  3. Run `npm -v` and `node -v`, ensure both of these work, if not, google how to install npm on windows
  
- 4. Install the react-scripts
+ 4. Install the dependencies
  
-    `npm install react-scripts`
+    `npm install`
     
  5. Build the project
  
