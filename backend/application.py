@@ -2,13 +2,15 @@ import logging
 from flask import url_for
 from flask import Flask
 
+import databaseBuilder
 from defaults import defaultBlueprint
 
 # Init flask application
 application = Flask(__name__)
 # Register blueprints
 application.register_blueprint(defaultBlueprint)
-
+database = databaseBuilder.buildDatabase(None)
+print(database.execute("SELECT * FROM crimes").fetchall())
 
 def has_no_empty_params(rule):
     """
