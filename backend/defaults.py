@@ -3,10 +3,6 @@ from flask import request
 from flask import Blueprint
 
 defaultBlueprint = Blueprint('defaults', __name__)
-@defaultBlueprint.route('/<loc>')
-def default_loc(loc):
-    return jsonify(loc)
-
 @defaultBlueprint.app_errorhandler(404)
 def uri_not_found(e):
     """

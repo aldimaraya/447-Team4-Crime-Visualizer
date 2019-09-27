@@ -7,3 +7,4 @@ __*
 # trash dev files
 __init__.py
 *.log
+crime.db
