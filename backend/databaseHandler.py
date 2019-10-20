@@ -131,28 +131,6 @@ def db_proto(num):
         return jsonify(error=str("DATABASE has not been initalized yet")), 404
 
 
-@dbBlueprint.route("/db/run/<stmt>", methods=['GET'])
-def db_runstmt(stmt):
-    """
-    this function is for debugging purposes. it will be replaced with the `/db/filter/` function during production 
-    """
-    # TODO: CHECK/ENABLE FOR POST?
-    if (DATABASE):
-        conn = DATABASE.connect()
-        print(stmt)
-        stmt = stmt.replace("+"," ")
-        stmt = convert_reqest_to_sql(stmt)
-        print(stmt)
-        #print(conn.execute("SELECT COUNT(*) FROM " + DB_TABLE_NAME + " WHERE CrimeCode LIKE \"3CK\";").fetchall())
-        #print(conn.execute("SELECT COUNT(*) FROM " + DB_TABLE_NAME + " WHERE CrimeCode LIKE \"3CK\" AND inside_outside = \"I\" AND weapon = \"KNIFE\";").fetchall())
-
-        result = conn.execute(stmt).fetchall()
-        #print(stmt.replace(" ","+"))
-        print(len(result))
-        return dumps([dict(r) for r in result])
-    else:
-        return jsonify(error=str("DATABASE has not been initalized yet")), 404
-
 def is_valid_db_header(key):
     """
     :returns: True if the key is a valid database column header name, otherwise False
@@ -186,9 +164,7 @@ def convert_reqest_to_sql(filters):
     """
     try:
         stmt = "SELECT * FROM " + DB_TABLE_NAME + " WHERE "
-        # debugging, we use a predefined json file
-        with open('example_req_data2.json') as json_file:
-            filters = load(json_file)
+       
         # filter before & after date & time
         # filter by select crime codes
         # filter by locations?
@@ -253,6 +229,26 @@ def convert_reqest_to_sql(filters):
         return stmt
     except Exception as e:
         logging.error(e)
+        return None, "Something went wrong while attempting to convert the request into an sql statement"
+
+
+@dbBlueprint.route("/db/run/", methods=['GET'])
+def db_runstmt():
+    """
+    this function is for debugging purposes. it will be replaced with the `/db/filter/` function during production 
+    """
+    # TODO: CHECK/ENABLE FOR POST?
+    if (DATABASE):
+        conn = DATABASE.connect()
+         # debugging, we use a predefined json file
+        with open('example_req_data2.json') as json_file:
+            filters = load(json_file)
+        stmt = convert_reqest_to_sql(stmt)
+        result = conn.execute(stmt).fetchall()
+        return dumps([dict(r) for r in result])
+    else:
+        return jsonify(error=str("DATABASE has not been initalized yet")), 404
+
 
 @dbBlueprint.route("/db/filter/", methods=['POST'])
 def db_filterdata():
@@ -266,10 +262,13 @@ def db_filterdata():
     if len(filters) == 0:
         return jsonify(error=str("No filters requested"))
 
-    sql_stmt = convert_reqest_to_sql(filter_request)
-
-    if (DATABASE):
+    sql_stmt, err = convert_reqest_to_sql(filter_request)
+    if sql_stmt is None:
+        return jsonify(error=str())
+    if DATABASE:
         conn = DATABASE.connect()
+        result = conn.execute(stmt).fetchall()
+        return dumps([dict(r) for r in result])
         result = conn.execute('SELECT * FROM ' + DB_TABLE_NAME).fetchmany(int(num))
         return dumps([dict(r) for r in result])
     else:
