@@ -54,6 +54,8 @@
  ### what the sql database should look like:
 Single table of name: `crimeDB`
 Column info for table: 
+
+
 | NAME | TYPE | DESCRIPTION | Formatting | Filters |
 |-------------------|-------|-------------------------------------------------------------------------------------|--------------------------------------------|-------------------------|
 | `id` | INT | The uid of a row in the database *(A row's UID may change after a database update)* | Integer, starting at 1 | `before`, `after`, `is` |
@@ -73,12 +75,15 @@ Column info for table:
 | `total_incidents` | FLOAT | The total number of incidents for this crime.  |  | `before`, `after`, `is` |
 | `vri_name1` | STR | Violence Reduction Initiative zone name.  |  | `is` |
 
+
 | Filter | Action | Expecting |
 |--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
 | before | Returns all records where the record is less than or equal to the input | Single value -> `"valueXYZ"` |
 | after | Returns all records where the record is greater than or equal to the input | Single value -> `"valueXYZ"` |
 | is | Returns all records that match any value in the input list | List -> `["value1", "value2", ..., "valueN"]` |
 | radius | **not implemented yet** Returns all records in a specific radius to a coordinate point | Object -> `{ "longitude":x, "latitude":y, "radius":z }` |
+
+
 ***Notes:*** 
   - Using both the `before` and `after` filter on a specific column value returns all records between the two inputs (inclusive). 
   - Using the `before`, `after`, and `is` filters simultaneously will ignore the values in the `is`.  
