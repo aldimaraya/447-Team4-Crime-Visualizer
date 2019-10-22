@@ -44,12 +44,12 @@
 	"longitude" : {
 	"near" : -76.661207,
 	"radius" : 0.001,
-		"is" : [-76.661207]
+	"is" : [-76.661207]
 	},
 	"latitude" : {
 	"near" : 39.329285,
 	"radius" : 0.001,
-		"is" : [39.329285]
+	"is" : [39.329285]
 	},
 	"premise" : {
 		"is" : ["ROW/TOWNHOUSE"]

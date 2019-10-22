@@ -17,72 +17,49 @@ from flask import jsonify
 from flask import request
 from json import dumps, load
 
-CRIME_DATABASE_URL = "https://data.baltimorecity.gov/resource/wsfq-mvij.json"
-DB_TABLE_NAME = 'crimeDB2'
+# Constants
+# related to the URI of the online database
+CRIME_DATABASE_URL = "data.baltimorecity.gov"
+CRIME_DATABASE_UID = "wsfq-mvij"
+CRIME_DATABASE_DATA_FORMAT = ".json"
+
+SOCRATA_API_KEY = 'QIp1Jkf0zTvXH0jc2j8xMoRim'
+
+# related to the local SQL database
+DB_TABLE_NAME = 'crimeDB'
 SQL_DATABASE_FILE_NAME = 'crime.db'
 SQL_DATABASE_URI = 'sqlite:///' + SQL_DATABASE_FILE_NAME
+
+# the database engine
 DATABASE = None
 
 
-
-def initDB():
-    """ 
-    initalizes the database if it does not exist with a backup file
-    TODO: For production we should probably remove this part 
-    """
-    global DATABASE
-    DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
-    
-    try:
-        # Check to see if the inital table already exists, if so abort here
-        pd.read_sql_table(DB_TABLE_NAME, DATABASE)
-    except ValueError as e:
-        # table does not exist yet, so fill it
-        
-        with open('BPD_Part_1_Victim_Based_Crime_Data.csv', 'r') as file:
-            database = pd.read_csv(file, dtype={"crimedate":str,"crimetime":str,"crimecode":str,"location":str,"description":str,"inside_outside":str,"weapon":str,"post":float,"district":str,"neighborhood":str,"longitude":float,"latitude":float,"location 1":str,"premise":str,"vri_name1":str,"total_incidents":float})
-        database['weapon'] = database['weapon'].replace("NA", np.nan)
-
-        # fixing some formatting inconsistencies
-        database['inside_outside'] = database['inside_outside'].replace("(?i)outside", "O",regex=True)
-        database['inside_outside'] = database['inside_outside'].replace("(?i)inside", "I",regex=True)
-        
-        database['crimedate'] = database['crimedate'].replace("T00:00:00.000","",regex=True)
-        # vri_name1 doesn't seem to have any useful information so we can drop that
-        #database = database.drop(['vri_name1'], axis = 1)
-        
-        #clear out any special funny chars so we can clean the requested data
-        database = database.replace("[#\"\'_]", "",regex=True)
-
-        # TODO not an error
-        logging.error("Attempting to load " + str(len(database['crimedate'])) + " rows")
-
-        database.to_sql(DB_TABLE_NAME, con=DATABASE, index=True, index_label='id', if_exists='replace')
-        # TODO not an error
-        logging.error("Loaded " + str(len(database['crimedate'])) + " rows" + str(database))
-
-    
-
 def updateDB():
     """
-    Gets and cleans the entire database from the crime website url
+    Imports the entire database from the URI, cleans the data, and puts it into
+    the local database.
     """
-    # IMPORT DATABASE
-    # importing JSON file created by SODA API into a Pandas dataframe
-    try:
-            
-        # authenticated client with api token
-        client = Socrata("data.baltimorecity.gov", 'QIp1Jkf0zTvXH0jc2j8xMoRim')
+    global DATABASE
 
-        # First 2000 results, returned as JSON from API / converted to Python list of
-        # dictionaries by sodapy.
-        results = client.get("wsfq-mvij", limit=10000000)
+    # IMPORT DATABASE
+    if DATABASE is None:
+        DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
+
+    try:
+        
+        # authenticated client with api token
+        client = Socrata(CRIME_DATABASE_URL, SOCRATA_API_KEY)
+
+        # First 10000000 results, returned as JSON from API / converted to Python
+        # list of dictionaries by sodapy.
+        results = client.get(CRIME_DATABASE_UID, limit=10000000)
 
         # Convert to pandas DataFrame
         database = pd.DataFrame.from_records(results)
     except:
         logging.error("Unable to read json from url: " + str(CRIME_DATABASE_URL))
         return False
+
     # CLEAN DATA
     # manually converting all instances of "NA" in the "Weapon" column to NaN
     # so that program can properly handle it for any calculations
@@ -98,8 +75,9 @@ def updateDB():
     
     #clear out any special funny chars so we can clean the requested data
     database = database.replace("[#\"\'_]", "",regex=True)
-
+    database = database.astype({"post":float,"longitude":float,"latitude":float,"total_incidents":float})#,"crimetime":str,"crimecode":str,"location":str,"description":str,"inside_outside":str,"weapon":str,"post":float,"district":str,"neighborhood":str,"longitude":float,"latitude":float,"location_1":str,"premise":str,"total_incidents":float,"vri_name1":str})
     database.to_sql(DB_TABLE_NAME, con=DATABASE, index=True, index_label='id', if_exists='replace')
+    print([" ".join([str(x['name']),str(x['type'])]) for x in inspect(DATABASE).get_columns(DB_TABLE_NAME)])
     return True
 
 dbBlueprint = Blueprint('db', __name__)
@@ -165,32 +143,26 @@ def convert_reqest_to_sql(filters):
     try:
         stmt = "SELECT * FROM " + DB_TABLE_NAME + " WHERE "
        
-        # filter before & after date & time
-        # filter by select crime codes
-        # filter by locations?
-        # filter by select descriptions?
-        # filter by in or out
-        # filter by select weapon
-        # filter by post?
-        # filter by district?
-        # filter by neighborhood?
-        # filter by lat/long?
-        # filter by premise? 
-        logging.info(filters)
+        
         for cols in filters:
+            # validate this filter
             if not is_valid_db_header(cols):
                 return None, "Invalid key: " + str(cols)
             if not is_clean_filter_request(filters[cols]):
                 return None, "Invalid key value: " + str(cols) + " -> " + str(filters[cols])
+            
+            # get the values
             before = filters[cols].get("before", None)
             after = filters[cols].get("after", None)
             ls = filters[cols].get("is", None)
-            logging.info(cols)
+
             #if before and after and ls:
                 #return jsonify(error=str("Had filter with between & is: " + str(cols)))
             #el
             if before and after:
                 stmt += str(cols) + " BETWEEN " 
+                #temp = "{0}" + str(before) + "{0} AND {0}" + str(after) + "{0}"
+                #stmt += temp.format("\"" if type(before) is str or type(after) is str else "")
                 if type(before) is str or type(after) is str:
                     stmt += "\"" + str(before) + "\" AND \"" + str(after) + "\"" 
                 else:
@@ -202,12 +174,14 @@ def convert_reqest_to_sql(filters):
                     stmt += "\"" + str(before) + "\""
                 else:
                     stmt += str(before)
+
             elif after:
                 stmt += str(cols) + " >= " 
                 if type(after) is str:
                     stmt += "\"" + str(after) + "\""
                 else:
                     stmt += str(after)
+
             elif ls:
                 ls = list(dict.fromkeys(ls))
                 i = 0
@@ -223,10 +197,11 @@ def convert_reqest_to_sql(filters):
                     if i < len(ls):
                         stmt += " OR "
 
-
+            # `and`, to intersect with the next filter
             stmt += " AND "
         stmt += " TRUE "
         return stmt
+
     except Exception as e:
         logging.error(e)
         return None, "Something went wrong while attempting to convert the request into an sql statement"
@@ -267,10 +242,11 @@ def db_filterdata():
         return jsonify(error=str())
     if DATABASE:
         conn = DATABASE.connect()
-        result = conn.execute(stmt).fetchall()
-        return dumps([dict(r) for r in result])
-        result = conn.execute('SELECT * FROM ' + DB_TABLE_NAME).fetchmany(int(num))
-        return dumps([dict(r) for r in result])
+        try: 
+            result = conn.execute(stmt).fetchall()
+            return dumps([dict(r) for r in result])
+        except Exception as e:
+            return jsonify(error=str(e))
     else:
         return jsonify(error=str("DATABASE has not been initalized yet")), 404
 
