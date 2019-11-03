@@ -52,8 +52,8 @@
   ..."/db/filter/" as a **post** request. see the example_req_data.json file to see what the dictionary should look like. 
  
  ### what the sql database should look like:
-Single table of name: `crimeDB`
-Column info for table: 
+Tables with the following names: `crime`, `realestate`
+Column info for table `crime`: 
 
 
 | NAME | TYPE | DESCRIPTION | Formatting | Filters |
@@ -76,6 +76,27 @@ Column info for table:
 | `vri_name1` | STR | Violence Reduction Initiative zone name.  |  | `is` |
 
 
+
+Column info for table `realestate`: 
+
+
+| NAME | TYPE | DESCRIPTION | Formatting | Filters |
+|-------------------|-------|-------------------------------------------------------------------------------------|--------------------------------------------|-------------------------|
+| `uid` | BIGINT | The unique id of this realestate item  |  | `before`, `after`, `is` |
+| `perm_home` | TEXT | If this is a permanent resedency.  | `N`,`H`,`D`, or `null` | `is` |
+| `date_sold` | TEXT | The date the property was last sold. |  | `before`, `after`, `is` |
+| `year_built` | BIGINT | The year the property was built.  |  | `before`, `after`, `is` |
+| `owner_mode` | TEXT | The Ownership Mode (idk)  | `F`,`L`,`null`,`3` | `is` |
+| `vacant` | TEXT | If the property is listed as vacant.  | `Y`,`N`,`null`| `is` |
+| `addr_prefix` | TEXT | The address prefix. |  | `is` |
+| `addr_name` | TEXT | The address street. |  | `is` |
+| `addr_suffix` | TEXT | The address street type. |  | `is` |
+| `addr_num` | INTEGER | The building number. |  | `is` |
+| `ESTPRICE` | FLOAT | The estimated price of the property. |  |  `before`, `after`, `is` |
+| `longitude` | FLOAT | The estimated central longitude of the property. |  `before`, `after`, `is` |
+| `latitude` | FLOAT | The estimated central latitude of the property. |  | `before`, `after`, `is` |
+
+
 | Filter | Action | Expecting |
 |--------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
 | before | Returns all records where the record is less than or equal to the input | Single value -> `"valueXYZ"` |
@@ -89,3 +110,5 @@ Column info for table:
   - Using the `before`, `after`, and `is` filters simultaneously will ignore the values in the `is`.  
   - Using a filter on a specific column where it is not listed may result in strange returned values. 
   - You may request a value of `null` as a value in the `is` list.
+
+we are not doing this multithreaded because we plan to deploy on a simple tiny server

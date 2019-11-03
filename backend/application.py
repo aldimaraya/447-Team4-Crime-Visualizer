@@ -62,7 +62,7 @@ def after_request(response):
 if __name__ == "__main__":
     logging.basicConfig(
         # file = 'backendLogs.log'  # log to file # TODO: UNCOMMENT LINE FOR PRODUCTION
-        level=logging.DEBUG,
+        level=logging.ERROR,
         format='%(asctime)s.%(msecs)03d,%(levelname)s,%(module)s,%(funcName)s,%(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )

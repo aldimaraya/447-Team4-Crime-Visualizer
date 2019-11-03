@@ -1,57 +1,71 @@
 {
-	
-	"id" : {
-		"before": 2,
-		"after": 2,
-		"is" : [2]
+	"crime": {
+		"id" : {
+			"before": 2,
+			"after": 2,
+			"is" : [2]
+		},
+		"crimedate" : {
+			"before": "2019-10-12",
+			"after": "2019-10-12",
+			"is" : ["2019-10-12"]
+		},
+		"crimetime" : {
+			"before": "23:01:00",
+			"after": "23:01:00",
+			"is" : ["23:01:00"]
+		},
+		"crimecode" : {
+			"is" : ["4E"]
+		},
+		"location" : {
+			"is" : ["2800 ROCKROSE AVE"]
+		},
+		"description" : {
+			"is" : ["COMMON ASSAULT"]
+		},
+		"inside_outside" : {
+			"is" : ["I"]
+		},
+		"weapon" : {
+			"is" : [null, "KNIFE"]
+		},
+		"post" : {
+			"before": 612.0,
+			"after": 612.0,
+			"is" : [612.0]
+		},
+		"district" : {
+			"is" : ["NORTHWEST"]
+		},
+		"neighborhood" : {
+			"is" : ["PARK CIRCLE"]
+		},
+		"longitude" : {
+			"near" : -76.661207,
+			"radius" : 0.001,
+			"is" : [-76.661207]
+		},
+		"latitude" : {
+			"near" : 39.329285,
+			"radius" : 0.001,
+			"is" : [39.329285]
+		},
+		"premise" : {
+			"is" : ["ROW/TOWNHOUSE"]
+		}
 	},
-	"crimedate" : {
-		"before": "2019-10-12",
-		"after": "2019-10-12",
-		"is" : ["2019-10-12"]
-	},
-	"crimetime" : {
-		"before": "23:01:00",
-		"after": "23:01:00",
-		"is" : ["23:01:00"]
-	},
-	"crimecode" : {
-		"is" : ["4E"]
-	},
-	"location" : {
-		"is" : ["2800 ROCKROSE AVE"]
-	},
-	"description" : {
-		"is" : ["COMMON ASSAULT"]
-	},
-	"inside_outside" : {
-		"is" : ["I"]
-	},
-	"weapon" : {
-		"is" : [null, "KNIFE"]
-	},
-	"post" : {
-		"before": 612.0,
-		"after": 612.0,
-		"is" : [612.0]
-	},
-	"district" : {
-		"is" : ["NORTHWEST"]
-	},
-	"neighborhood" : {
-		"is" : ["PARK CIRCLE"]
-	},
-	"longitude" : {
-	"near" : -76.661207,
-	"radius" : 0.001,
-	"is" : [-76.661207]
-	},
-	"latitude" : {
-	"near" : 39.329285,
-	"radius" : 0.001,
-	"is" : [39.329285]
-	},
-	"premise" : {
-		"is" : ["ROW/TOWNHOUSE"]
+	"realestate":{
+		"longitude" : {
+			"near" : -76.661207,
+			"radius" : 0.001,
+			"is" : [-76.661207]
+		},
+		"latitude" : {
+			"near" : 39.329285,
+			"radius" : 0.001,
+			"is" : [39.329285]
+		},
 	}
+	
 }
