@@ -1,5 +1,7 @@
 export function dataToHeatmap(data){
 
+    console.log("Converting to heatmap data")
+
     var newArray = [];
 
     data.map((crime, index) => {

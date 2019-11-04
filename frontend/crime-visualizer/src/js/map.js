@@ -1,4 +1,8 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
+import 'normalize.css/normalize.css'
+import '@blueprintjs/core/lib/css/blueprint.css'
+import '@blueprintjs/datetime/lib/css/blueprint-datetime.css'
+import '@blueprintjs/icons/lib/css/blueprint-icons.css'
+
 import ReactMapGL, {NavigationControl,FullscreenControl,SVGOverlay,Popup, Marker} from 'react-map-gl';
 import React from 'react';
 import Controller from './controllers.js';
@@ -12,6 +16,9 @@ import {HeatmapLayer} from '@deck.gl/aggregation-layers';
 const axios = require('axios').default;
 
 const MAPBOXTOKEN = 'pk.eyJ1IjoiaWRsYSIsImEiOiJjazB2OHNpOXQwNmptM2JsYWFnczBydDA4In0.nWfSkM6z87tzePEXlxENew';
+
+//Update to reflect backend endpoint
+const hostName = 'http://127.0.0.1:5000/db/fetchall';
 
 class Map extends React.Component{
     
@@ -33,15 +40,16 @@ class Map extends React.Component{
     }
 
     componentDidMount(){
-        axios.get('https://data.baltimorecity.gov/resource/wsfq-mvij.json')
+        axios.get(hostName)
             .then((response) => {
                 console.log("Data successfully retrieved");
                 console.log(response.data);
-                this.setState({data: response.data.slice(1,200), isLoading:false});
-                this.setState({heatMapData: dataToHeatmap(response.data)});
+                this.setState({data: response.data, isLoading:false});
+                this.setState({heatmapdata: dataToHeatmap(response.data)});
             })
-            .catch(function (error) {
+            .catch((error) => {
                 console.log("Error: ", error);
+                this.setState({isLoading:false});
         })
     }
 
@@ -67,12 +75,13 @@ class Map extends React.Component{
         );
       }
 
-    renderMarkers() {
-        const {data} = this.state;
+    renderMarkers(num) {
+
+        var data = this.state.data.slice(0,num);
 
         return(
             data && this.state.dataview === 'pins' && (
-                this.state.data.map((crime, index) => (
+                data.map((crime, index) => (
                     crime.latitude && crime.longitude &&
                     <Marker
                         key={`marker-${index}`}
@@ -93,13 +102,16 @@ class Map extends React.Component{
 
     renderHeatMap() {
 
-        const {heatMapData} = this.state;
+        console.log(this.state.heatmapdata[0].COORDINATES);
+        const d = this.state.heatmapdata;
 
         const layer = new HeatmapLayer({
             id: 'heatmapLayer',
-            getPosition: heatMapData => heatMapData.COORDINATES,
-            getWeight: heatMapData => heatMapData.WEIGHT    
+            getPosition: d[0].COORDINATES,
+            getWeight: d[0].WEIGHT   
         });
+
+        console.log("Rendering Heatmap");
         
         return(<DeckGL {...this.state.viewport} layers={[layer]} />)
 
@@ -155,7 +167,7 @@ class Map extends React.Component{
                     mapboxApiAccessToken={MAPBOXTOKEN}>
 
                     {this.renderPopup()}
-                    {this.renderMarkers()}
+                    {this.renderMarkers(200)}
                     {this.state.dataview == 'heatmap' ? this.renderHeatMap() : null}
                     
 
@@ -167,7 +179,7 @@ class Map extends React.Component{
                         <NavigationControl />
                     </div>
 
-                    <Controller updateView = {this.updateView} updateDataView = {this.updateDataView}/>
+                    <Controller updateView = {this.updateView} updateDataView = {this.updateDataView} updateMarker = {this.renderMarkers} data={this.state.data}/>
                 </ReactMapGL>
 
             </div>
