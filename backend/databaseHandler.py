@@ -19,7 +19,7 @@ from json import dumps
 from json import load
 from requests import post as post_request
 import traceback, sys
-
+from datetime import datetime, timedelta
 # Constants
 # Crime database...
 _crime_api_uri="https://data.baltimorecity.gov/resource/wsfq-mvij.json"
@@ -54,9 +54,19 @@ def updateDB():
     # IMPORT DATABASE
     if DATABASE is None:
         DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
-
-    update_crime_table()
-    update_realestate_table()
+    try: 
+        f = open('lastupdated','r')
+        contents = f.read()
+        temp = datetime.strptime(contents, "%Y-%m-%d %H:%M:%S.%f")
+        if temp + timedelta(days=1) < datetime.now():
+            update_crime_table()
+            update_realestate_table()
+            with open('lastupdated','w') as f:
+                f.write(str(datetime.now()))
+        else:
+            print("Not updating the databases right now")
+    except Exception as e:
+        logging.error(e)    
 
     debugging_output = ""
     for table in inspect(DATABASE).get_table_names():
