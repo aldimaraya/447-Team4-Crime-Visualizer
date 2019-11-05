@@ -54,20 +54,20 @@ def updateDB():
     # IMPORT DATABASE
     if DATABASE is None:
         DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
+    temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
     try: 
         f = open('lastupdated','r')
         contents = f.read()
         temp = datetime.strptime(contents, "%Y-%m-%d %H:%M:%S.%f")
-        if temp + timedelta(days=1) < datetime.now():
-            update_crime_table()
-            update_realestate_table()
-            with open('lastupdated','w') as f:
-                f.write(str(datetime.now()))
-        else:
-            print("Not updating the databases right now")
     except Exception as e:
         logging.error(e)    
-
+    if temp + timedelta(days=1) < datetime.now():
+        update_crime_table()
+        update_realestate_table()
+        with open('lastupdated','w') as f:
+            f.write(str(datetime.now()))
+    else:
+        print("Not updating the databases right now")
     debugging_output = ""
     for table in inspect(DATABASE).get_table_names():
         debugging_output += "\n************\n" + table + "\n************"

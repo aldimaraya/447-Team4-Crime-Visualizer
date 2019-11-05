@@ -24,7 +24,7 @@
   
   2. On windows: Run `.\env\Scripts\activate`
   
-     On linuxtype: Run `env/bin/activate`
+     On linuxtype: Run `source env/bin/activate`
      
   3. Install requirements with `pip3 install -r requirements.txt`
   
@@ -36,7 +36,7 @@
      
      On windows: Run `.\env\Scripts\activate`
   
-     On linuxtype: Run `env/bin/activate`
+     On linuxtype: Run `source env/bin/activate`
      
   2. Run the flask server
     `python application.py`
