@@ -36,9 +36,13 @@ def get_home():
     for rule in application.url_map.iter_rules():
         # Filter out rules we can't navigate to in a browser
         # and rules that require parameters
-        if (("GET" in rule.methods) or ("POST" in rule.methods)) and has_no_empty_params(rule):
+        #if (("GET" in rule.methods) or ("POST" in rule.methods)) and has_no_empty_params(rule):
+        try:
             url = url_for(rule.endpoint, **(rule.defaults or {}))
             links.append(url)
+        except:
+            pass
+        
     # links is now a list of url, endpoint tuples
     for item in sorted(links):
         map_html += "<a href=\"" + item + \
@@ -54,7 +58,7 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
     response.headers.add('Access-Control-Allow-Headers',
                          'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST')
     return response
 
 
@@ -67,8 +71,8 @@ if __name__ == "__main__":
         datefmt='%Y-%m-%d %H:%M:%S',
     )
     logging.info('Started app')
-    # Setting debug to True enables debug output. This line should be
+    # Setting debug to True enables debug output. TODO: This line should be
     # removed before deploying a production app.
     application.debug = True
-    application.run(host="0.0.0.0", port=80)
+    application.run() # insert host here?
     logging.info("closing app")

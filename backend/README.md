@@ -92,7 +92,7 @@ Column info for table `realestate`:
 | `addr_name` | TEXT | The address street. |  | `is` |
 | `addr_suffix` | TEXT | The address street type. |  | `is` |
 | `addr_num` | INTEGER | The building number. |  | `is` |
-| `ESTPRICE` | FLOAT | The estimated price of the property. |  |  `before`, `after`, `is` |
+| `est_value` | FLOAT | The estimated price of the property. |  |  `before`, `after`, `is` |
 | `longitude` | FLOAT | The estimated central longitude of the property. |  `before`, `after`, `is` |
 | `latitude` | FLOAT | The estimated central latitude of the property. |  | `before`, `after`, `is` |
 
@@ -112,3 +112,36 @@ Column info for table `realestate`:
   - You may request a value of `null` as a value in the `is` list.
 
 we are not doing this multithreaded because we plan to deploy on a simple tiny server
+
+### example filter data and usage
+To request up to 20 of the realestate values greater than $100,000; and all crimes with the following criteria: 
+ * that happened on or after January 31st, 2012 
+ * that happened between 14:00 hrs and 18:00 hrs
+ * that is tagged with the premise "ALLEY", or "BAR"
+
+```
+myFilters = {
+  crime: {
+    crimedate: { after: "01/31/2012" },
+    crimetime: { after: "14:00:00", before: "18:00:00" },
+    premise: { is: ["ALLEY", "BAR"] }
+  },
+  realestate: {
+    limit: 20,
+    est_value: { after: 100000 }
+  }
+}
+```
+
+To get the data with something such as Axios:
+```
+axios.post(API_ENDPOINT + '/db/filter/', myFilters)
+  .then((response) => {
+      console.log("Data successfully retrieved");
+      console.log("Crime data: ", response.data['crime']);
+      console.log("Realestate data: ", response.data['realestate']);
+  })
+  .catch(function (error) {
+      console.log("Error: ", error);
+  })
+```

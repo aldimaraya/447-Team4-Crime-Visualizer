@@ -55,25 +55,33 @@ def updateDB():
     if DATABASE is None:
         DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
     temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
+    doupdate = True
     try: 
         f = open('lastupdated','r')
         contents = f.read()
         temp = datetime.strptime(contents, "%Y-%m-%d %H:%M:%S.%f")
+        
+        # if the last update was over a day ago, do the update
+        if temp + timedelta(days=1) > datetime.now():
+            doupdate = False
     except Exception as e:
         logging.error(e)    
-    if temp + timedelta(days=1) < datetime.now():
-        update_crime_table()
+    
+    # if the last update was over a day ago, do the update
+    if doupdate:
+        # TODO: uncomment to allow for updates
+        #update_crime_table()
         update_realestate_table()
         with open('lastupdated','w') as f:
             f.write(str(datetime.now()))
     else:
         print("Not updating the databases right now")
+    # Print out the current 
     debugging_output = ""
     for table in inspect(DATABASE).get_table_names():
         debugging_output += "\n************\n" + table + "\n************"
         for name in inspect(DATABASE).get_columns(table):
-            debugging_output +=  "\n| `{}` | {} | desc  |  | `b4afis` |".format(name['name'],name['type'])
-            #debugging_output += "\n\t" + name['name'] + " | " 
+            debugging_output += "\n" + name['name'] + " | " + str(name['type'])
     debugging_output += "\nROWS in " + CRIME_TABLE_NAME + " db: \t" + str(DATABASE.connect().execute("SELECT COUNT(id) FROM " + CRIME_TABLE_NAME).fetchall()[0][0])
     debugging_output += "\nROWS in " + REALESTATE_TABLE_NAME + " db: \t" + str(DATABASE.connect().execute("SELECT COUNT(uid) FROM " + REALESTATE_TABLE_NAME).fetchall()[0][0])
     logging.warn(debugging_output)
@@ -132,6 +140,7 @@ def update_realestate_table():
     # TODO if we hit an out of memory error around here, we should fix how we read in the data
 
     logging.warn("UPDATING REALESTATE DB")
+    # TODO: update max_req to 1001
     max_req = 1001
     where_stmt = "1=1"
     if_exists = 'replace'       # replace current database on the first iteration
@@ -144,7 +153,7 @@ def update_realestate_table():
             'outFields':", ".join(RE_DATABASE_COLS),    # get specific columns
             'returnGeometry':True,                      # do get the extra geometry for geolocation stuff
             'outSR':4286,                               # get coordinate values
-            'f':'json',                                 # json format
+            'f':'json',                                  # GEOjson format
             'units':'esriSRUnit_StatuteMile',           # 1 mile unit
             'resultRecordCount':max_req,                # the number of records to request at this time
             'orderByFields':'OBJECTID'                  # the field to be sorted by
@@ -281,6 +290,8 @@ def convert_reqest_to_sql(filters):
 
             for cols in filters[table_name]:
                 # validate this filter
+                if cols == "limit":
+                    continue
                 if not is_valid_db_header(table_name, cols):
                     return statements, "Invalid table key: " + str(cols)
                 if not is_clean_filter_request(filters[table_name][cols]):
@@ -378,7 +389,13 @@ def db_filterdata():
         try: 
             json_results = {}
             for tbl_filter in sql_stmts.keys():
-                result = conn.execute(sql_stmts[tbl_filter]).fetchall()
+                limit = filter_request[tbl_filter].get('limit',None)
+
+                if limit is not None and type(limit) is int:
+                    result = conn.execute(sql_stmts[tbl_filter]).fetchmany(limit)
+                else:
+                    result = conn.execute(sql_stmts[tbl_filter]).fetchall()
+                
                 print("run: " + sql_stmts[tbl_filter] + " results: ", len(result))
                 json_results[tbl_filter] = [dict(r) for r in result]
             return dumps(json_results)
