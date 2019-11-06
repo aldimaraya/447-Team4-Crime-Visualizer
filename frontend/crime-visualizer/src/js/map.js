@@ -26,7 +26,7 @@ class Map extends React.Component{
     }
 
     componentDidMount(){
-        /*axios.get('https://data.baltimorecity.gov/resource/wsfq-mvij.json')
+        axios.get('https://data.baltimorecity.gov/resource/wsfq-mvij.json')
             .then((response) => {
                 console.log("Data successfully retrieved");
                 console.log(response.data);
@@ -34,15 +34,6 @@ class Map extends React.Component{
             })
             .catch(function (error) {
                 console.log("Error: ", error);
-        })*/
-        axios.post('http://127.0.0.1:5000/db/filter/',{crime:{id:{after:0}}})
-        .then((response) => {
-            console.log("Data successfully retrieved");
-            console.log(response.data);
-            this.setState({data: response.data.slice(1,50), isLoading:false});
-        })
-        .catch(function (error) {
-            console.log("Error: ", error);
         })
 
         
