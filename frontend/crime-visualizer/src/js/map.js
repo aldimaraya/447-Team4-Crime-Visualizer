@@ -26,9 +26,9 @@ class Map extends React.Component{
         super(props);
         this.state = {
             viewport: {
-            latitude: 39.2904,
-            longitude: -76.6122,
-            zoom: 13
+                latitude: 39.2904,
+                longitude: -76.6122,
+                zoom: 13
             },
             data: [],
             heatmapdata: [],
@@ -40,17 +40,28 @@ class Map extends React.Component{
     }
 
     componentDidMount(){
-        axios.get(hostName)
-            .then((response) => {
-                console.log("Data successfully retrieved");
-                console.log(response.data);
-                this.setState({data: response.data, isLoading:false});
-                this.setState({heatmapdata: dataToHeatmap(response.data)});
-            })
-            .catch((error) => {
-                console.log("Error: ", error);
-                this.setState({isLoading:false});
+        var myFilters = {
+            crime: {
+              crimedate: { after: "01/31/2012" },
+              crimetime: { after: "14:00:00", before: "18:00:00" },
+              premise: { is: ["ALLEY", "BAR"] }
+            },
+            realestate: {
+              limit: 20,
+              est_value: { after: 100000 }
+            }
+          };
+        axios.post('http://127.0.0.1:5000/db/filter/', myFilters)
+        .then((response) => {
+            console.log("Data successfully retrieved");
+            console.log("Crime data: ", response.data['crime']);
+            console.log("Realestate data: ", response.data['realestate']);
+            this.setState({data: response.data['crime'], isLoading:false});
         })
+        .catch(function (error) {
+            console.log("Error: ", error);
+        })
+        
     }
 
     renderPopup() {
@@ -76,8 +87,13 @@ class Map extends React.Component{
       }
 
     renderMarkers(num) {
+        try{
+            var data = this.state.data.slice(0,num);
+        } catch {
+            console.error("oopsie");
+        }
 
-        var data = this.state.data.slice(0,num);
+        //var currentColors = ["fas fa-map-pin fa-1.5x red", "fas fa-map-pin fa-1.5x blue", "fas fa-map-pin fa-1.5x black"];
 
         return(
             data && this.state.dataview === 'pins' && (
@@ -88,7 +104,8 @@ class Map extends React.Component{
                         latitude={parseFloat(crime.latitude,10)}
                         longitude={parseFloat(crime.longitude,10)}>
                             <div>
-                                <i className="fas fa-map-pin fa-2x red" 
+
+                                <i className="fas fa-map-pin fa-1.5x red" //{currentColors[crime.id % 3].toString()} // we can make dynamic colors based on crime properties
                                 onClick={() => {
                                     console.log(crime);
                                     this.setState({popUpInfo: crime})}}></i>

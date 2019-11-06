@@ -3,6 +3,7 @@ import React, {Component} from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input} from 'reactstrap';
 import {Button , Collapse, Drawer, Slider} from "@blueprintjs/core";
 import DatePicker from 'react-date-picker'
+const axios = require('axios').default;
 
 class Controller extends Component{
 
@@ -13,7 +14,7 @@ class Controller extends Component{
             sidebar: false,
             mapStyle:'light',
             dataStyle:'pins',
-            mintext: 'Show',
+            mintext: 'Expand',
             dateStart: new Date('January 1, 1998'),
             dateEnd: new Date()
         }
@@ -24,7 +25,23 @@ class Controller extends Component{
     }
 
     toggleSideBar = () => {
-        this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Show" ? "Hide" : "Show"});
+        this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Expand" ? "Collapse" : "Expand"});
+    }
+
+    get20points = () => {
+        // get the users filters somehow, we hardcoded these filters in for now
+        var myFilterSelection = {crime:{limit:20, id:{after:100}}}
+
+        // get the data from the backend
+        axios.post('http://127.0.0.1:5000/db/filter/', myFilterSelection)
+        .then((response) => {
+            console.log("Data successfully retrieved");
+            console.log(response.data);
+            this.setState({data: response.data['crime'], isLoading:false});
+        })
+        .catch(function (error) {
+            console.log("Error: ", error);
+        })
     }
 
     onChangeStart = dateStart => this.setState({ dateStart })
@@ -48,7 +65,7 @@ class Controller extends Component{
             <div className = "control-panel">
                 <Button onClick={this.toggleGraphs}>Show Graphs</Button>
                 <Button onClick={this.toggleSideBar}>{this.state.mintext}</Button>
-
+                <Button onClick={this.get20points}>get 20 POINTS</Button>
                 <Collapse isOpen={this.state.sidebar}>
                     <div className = "cont">
                     <Form>
@@ -112,7 +129,9 @@ class Controller extends Component{
                     max={this.props.data.length}
                     min={0}
                     labelStepSize = {100}
-                    onChange={this.onChangeSlider}>
+                    onChange={this.onChangeSlider}
+                    onMouseUp={this.handleSubmit} 
+                    >
 
                 </Slider>
 
