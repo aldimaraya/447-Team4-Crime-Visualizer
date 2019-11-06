@@ -69,13 +69,12 @@ def updateDB():
     
     # if the last update was over a day ago, do the update
     if doupdate:
-        # TODO: uncomment to allow for updates
-        #update_crime_table()
+        update_crime_table()
         update_realestate_table()
         with open('lastupdated','w') as f:
             f.write(str(datetime.now()))
     else:
-        print("Not updating the databases right now")
+        logging.warn("Not updating the databases right now")
     # Print out the current 
     debugging_output = ""
     for table in inspect(DATABASE).get_table_names():
@@ -140,7 +139,6 @@ def update_realestate_table():
     # TODO if we hit an out of memory error around here, we should fix how we read in the data
 
     logging.warn("UPDATING REALESTATE DB")
-    # TODO: update max_req to 1001
     max_req = 1001
     where_stmt = "1=1"
     if_exists = 'replace'       # replace current database on the first iteration
@@ -153,7 +151,7 @@ def update_realestate_table():
             'outFields':", ".join(RE_DATABASE_COLS),    # get specific columns
             'returnGeometry':True,                      # do get the extra geometry for geolocation stuff
             'outSR':4286,                               # get coordinate values
-            'f':'json',                                  # GEOjson format
+            'f':'json',                                 # TODO: update to GEOjson format?
             'units':'esriSRUnit_StatuteMile',           # 1 mile unit
             'resultRecordCount':max_req,                # the number of records to request at this time
             'orderByFields':'OBJECTID'                  # the field to be sorted by
@@ -309,6 +307,7 @@ def convert_reqest_to_sql(filters):
                 elif ls and type(ls) is not list:
                     return statements, "Invalid filter data format: \'is\' requires a list of single values"
                 """
+                # create the `where` part of the sql statment based on the filters given 
                 if 'before' in filters[table_name][cols].keys() and 'after' in filters[table_name][cols].keys():
                     where += str(cols) + " BETWEEN " 
                     if type(before) is str or type(after) is str:
@@ -349,7 +348,7 @@ def convert_reqest_to_sql(filters):
                     # `and`, to intersect with the next filter
                     where += " AND "
                 else:
-                    print("???" + cols)
+                    logging.error("??? " + cols)
             statements[table_name] = stmt + where[:-5]
         return statements, None
 
@@ -396,7 +395,7 @@ def db_filterdata():
                 else:
                     result = conn.execute(sql_stmts[tbl_filter]).fetchall()
                 
-                print("run: " + sql_stmts[tbl_filter] + " results: ", len(result))
+                logging.info("run: " + sql_stmts[tbl_filter] + " results: ", len(result))
                 json_results[tbl_filter] = [dict(r) for r in result]
             return dumps(json_results)
         except Exception as e:

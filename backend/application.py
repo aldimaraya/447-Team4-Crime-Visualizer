@@ -18,14 +18,6 @@ application.register_blueprint(defaultBlueprint)
 application.register_blueprint(dbBlueprint)
 
 
-def has_no_empty_params(rule):
-    """
-    Helper function for `get_home()`. dont feel like explaining lol 
-    """
-    defaults = rule.defaults if rule.defaults is not None else ()
-    arguments = rule.arguments if rule.arguments is not None else ()
-    return len(defaults) >= len(arguments)
-    
 @application.route("/", methods=['GET'])
 def get_home():
     """
@@ -36,7 +28,6 @@ def get_home():
     for rule in application.url_map.iter_rules():
         # Filter out rules we can't navigate to in a browser
         # and rules that require parameters
-        #if (("GET" in rule.methods) or ("POST" in rule.methods)) and has_no_empty_params(rule):
         try:
             url = url_for(rule.endpoint, **(rule.defaults or {}))
             links.append(url)
