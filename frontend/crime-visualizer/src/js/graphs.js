@@ -9,6 +9,7 @@ import {
     RadialChart,
     ArcSeries,
     LabelSeries,
+    LineSeries,
     Hint
   } from 'react-vis';
 import React, {Component} from 'react';
@@ -26,8 +27,19 @@ class Graphs extends Component{
         {angle0: 0.7227*RAD, angle: 0.9091*RAD, radius: 150, radius0: 0, color: "#758e4f", label: "Knife"},
         {angle0: 0.9091*RAD, angle: RAD, radius: 150, radius0: 0, color: "#f26419", label: "Hands"},
       ],
-      timeDate: [
-        {x: "January", y: 10}
+      timeData: [
+        {x: 1, y: 150},
+        {x: 2, y: 745},
+        {x: 3, y: 453},
+        {x: 4, y: 90},
+        {x: 5, y: 789},
+        {x: 6, y: 509},
+        {x: 7, y: 325},
+        {x: 8, y: 213},
+        {x: 9, y: 432},
+        {x: 10, y: 134},
+        {x: 11, y: 98},
+        {x: 12, y: 321}
       ],
       value: ''
     }
@@ -252,10 +264,20 @@ class Graphs extends Component{
           xDomain={[0, 10]}
           yDomain={[0, 10]}
         >
+        <DiscreteColorLegend
+          style={{fontSize: 11, position: 'absolute', right: '150px', top: '300px'}}
+          orientation="horizontal"
+          items={[
+            {title: 'Firearms', color:'#86bbd8'},
+            {title: 'Other', color:'#f6ae2d'},
+            {title: 'Knife', color:'#758e4f'},
+            {title: 'Hands', color:'#f26419'}
+          ]}
+        />
         <ArcSeries
           animation
           colorType={'literal'}
-          center={{x: 4.5, y: 4.5}}
+          center={{x: 3, y: 4.5}}
           data={this.state.weaponData.map(row => {
             if (this.state.value && this.state.value.color === row.color){
               return {...row, style: {fill: '#a1a1a1'}};
@@ -281,51 +303,21 @@ class Graphs extends Component{
             padding: '10px',
             boxSizing: 'content-box'
           }}
-          xType="time"
+          xType="linear"
         >
-        <XAxis />
-        <YAxis />
+        <XAxis
+          tickValues={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
+          tickFormat={d => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d]}
+        />
+        <YAxis tickValues={[200, 400, 600, 800]}/>
         <HorizontalGridLines />
         <VerticalGridLines />
+        <LineSeries
+          data={this.state.timeData}
+        />
         </XYPlot>
 
         </div>
-        // <ArcSeries
-        //   animation
-        //   colorType={'literal'}
-        //   center={{x: 4.5, y: 4.5}}
-        //   data={this.state.weaponData.map(row => {
-        //     if (this.state.value && this.state.value.color === row.color){
-        //       return {...row, style: {fill: '#a1a1a1'}};
-        //     }
-        //     return row;
-        //   })}
-        //   onValueMouseOver={row => this.setState({value: row})}
-        //   onSeriesMouseOut={() => this.setState({value: false})}
-        //   style={{stroke: '#fff', strokeWidth: 3}}
-        // >
-        //   {value !== false && <Hint value={value.name}/>}
-        // </ArcSeries>
-
-        // <RadialChart
-        //   animation
-        //   className={'donut-chart-example'}
-        //   colorType={'literal'}
-        //   data={[
-        //     {angle: 51.36, color: "#86bbd8", label: "Firearm"},
-        //     {angle: 20.90, color: "#758e4f", label: "Knife"},
-        //     {angle: 18.64, color: "#f26419", label: "Hands"},
-        //     {angle: 9.09, color: "#f6ae2d", label: "Other"}
-        //   ]}
-        //   labelsRadiusMultiplier={1.1}
-        //   labelsStyle={{fontSize: 16, color: '#000'}}
-        //   showLabels
-        //   style={{border: '1px solid black', stroke: '#fff', strokeWidth: 4}}
-        //   width={300}
-        //   height={300}
-        // >
-        //   {value !== false && <Hint value={value}/>}
-        // </RadialChart>
     )
   }
 }
