@@ -1,55 +1,68 @@
-import 'bootstrap/dist/css/bootstrap.min.css';
+import 'normalize.css/normalize.css'
+import '@blueprintjs/core/lib/css/blueprint.css'
+import '@blueprintjs/datetime/lib/css/blueprint-datetime.css'
+import '@blueprintjs/icons/lib/css/blueprint-icons.css'
+
 import ReactMapGL, {NavigationControl,FullscreenControl,SVGOverlay,Popup, Marker} from 'react-map-gl';
 import React from 'react';
 import Controller from './controllers.js';
 import '@fortawesome/fontawesome-free/css/all.css';
+import ClipLoader from 'react-spinners/ClipLoader';
+import {dataToHeatmap} from './temp-dataParser.js';
+import DeckGL from '@deck.gl/react';
+import {HeatmapLayer} from '@deck.gl/aggregation-layers';
+
 
 const axios = require('axios').default;
 
 const MAPBOXTOKEN = 'pk.eyJ1IjoiaWRsYSIsImEiOiJjazB2OHNpOXQwNmptM2JsYWFnczBydDA4In0.nWfSkM6z87tzePEXlxENew';
+
+//Update to reflect backend endpoint
+const hostName = 'http://127.0.0.1:5000/db/fetchall';
 
 class Map extends React.Component{
     
     constructor(props){
         super(props);
         this.state = {
-        viewport: {
-          latitude: 39.2904,
-          longitude: -76.6122,
-          zoom: 13
-        },
-        data: [],
-        view: "mapbox://styles/mapbox/light-v9",
-        popUpInfo: null,
-        isLoading: true
+            viewport: {
+                latitude: 39.2904,
+                longitude: -76.6122,
+                zoom: 13
+            },
+            data: [],
+            heatmapdata: [],
+            view: "mapbox://styles/mapbox/light-v9",
+            popUpInfo: null,
+            dataview: 'pins',
+            isLoading: true
       };
     }
 
     componentDidMount(){
-        axios.get('https://data.baltimorecity.gov/resource/wsfq-mvij.json')
-            .then((response) => {
-                console.log("Data successfully retrieved");
-                console.log(response.data);
-                this.setState({data: response.data.slice(1,50), isLoading:false});
-            })
-            .catch(function (error) {
-                console.log("Error: ", error);
+        var myFilters = {
+            crime: {
+              crimedate: { after: "01/31/2012" },
+              crimetime: { after: "14:00:00", before: "18:00:00" },
+              premise: { is: ["ALLEY", "BAR"] }
+            },
+            realestate: {
+              limit: 20,
+              est_value: { after: 100000 }
+            }
+          };
+        axios.post('http://127.0.0.1:5000/db/filter/', myFilters)
+        .then((response) => {
+            console.log("Data successfully retrieved");
+            console.log("Crime data: ", response.data['crime']);
+            console.log("Realestate data: ", response.data['realestate']);
+            this.setState({data: response.data['crime'], isLoading:false});
         })
-
+        .catch(function (error) {
+            console.log("Error: ", error);
+        })
         
     }
-
-    // renderMarkers = (crime, index) => {
-    //     <Marker
-    //         key={`marker-${index}`}
-    //         onClick={() => this.setState({popUpInfo: crime})}
-    //         latitude={parseFloat(crime.latitude,10)}
-    //         longitude={parseFloat(crime.longitude,10)}>
-    //             <div>
-    //                 <i className="fas fa-map-pin fa-2x red"></i>
-    //             </div>
-    //     </Marker>
-    // }
 
     renderPopup() {
         const {popUpInfo} = this.state;
@@ -57,21 +70,70 @@ class Map extends React.Component{
         return (
           popUpInfo && (
             <Popup
-              tipSize={5}
+              tipSize={9}
               anchor="top"
               longitude={parseFloat(popUpInfo.longitude, 10)}
-              latitude={parseFloat(popUpInfo.latitude,10)}
+              latitude={parseFloat(popUpInfo.latitude, 10)}
               closeOnClick={false}
               onClose={() => this.setState({popUpInfo: null})}
             >
 
-            <p>Offense: {popUpInfo.description}</p>
-            <p>Location: {popUpInfo.location}</p>
+            <p>Offense: {popUpInfo.description}<br></br>
+               Location: {popUpInfo.location}</p>
               
             </Popup>
           )
         );
       }
+
+    renderMarkers(num) {
+        try{
+            var data = this.state.data.slice(0,num);
+        } catch {
+            console.error("oopsie");
+        }
+
+        //var currentColors = ["fas fa-map-pin fa-1.5x red", "fas fa-map-pin fa-1.5x blue", "fas fa-map-pin fa-1.5x black"];
+
+        return(
+            data && this.state.dataview === 'pins' && (
+                data.map((crime, index) => (
+                    crime.latitude && crime.longitude &&
+                    <Marker
+                        key={`marker-${index}`}
+                        latitude={parseFloat(crime.latitude,10)}
+                        longitude={parseFloat(crime.longitude,10)}>
+                            <div>
+
+                                <i className="fas fa-map-pin fa-1.5x red" //{currentColors[crime.id % 3].toString()} // we can make dynamic colors based on crime properties
+                                onClick={() => {
+                                    console.log(crime);
+                                    this.setState({popUpInfo: crime})}}></i>
+                            </div>
+                    </Marker>
+                ))
+            
+            )
+        )
+    }
+
+    renderHeatMap() {
+
+        console.log(this.state.heatmapdata[0].COORDINATES);
+        const d = this.state.heatmapdata;
+
+        const layer = new HeatmapLayer({
+            id: 'heatmapLayer',
+            getPosition: d[0].COORDINATES,
+            getWeight: d[0].WEIGHT   
+        });
+
+        console.log("Rendering Heatmap");
+        
+        return(<DeckGL {...this.state.viewport} layers={[layer]} />)
+
+
+    }
 
     updateView = (choice) => {
         console.log("Calling updateView", choice);
@@ -88,14 +150,26 @@ class Map extends React.Component{
         }
     }
 
-    _onViewportChange = viewport => this.setState({viewport});
+    updateDataView = (choice) => {
+        console.log(choice);
+        this.setState({dataview: choice});
+    }
 
-    _onStyleChange = mapStyle => this.setState({mapStyle});
+    _onViewportChange = viewport => this.setState({viewport});
 
     render(){
 
         if (this.state.isLoading){
-            return(<p>Loading</p>)
+            return(
+            <div className = "loader">
+                <ClipLoader
+                    sizeUnit={"px"}
+                    size={100}
+                    color={'#2b2b2b'}
+                    loading={this.state.loading}
+                />
+              </div>
+              )
         }
 
         return(
@@ -110,21 +184,9 @@ class Map extends React.Component{
                     mapboxApiAccessToken={MAPBOXTOKEN}>
 
                     {this.renderPopup()}
+                    {this.renderMarkers(200)}
+                    {this.state.dataview == 'heatmap' ? this.renderHeatMap() : null}
                     
-                    {this.state.data.map((crime, index) => (
-                            <Marker
-                                key={`marker-${index}`}
-                                latitude={parseFloat(crime.latitude,10)}
-                                longitude={parseFloat(crime.longitude,10)}>
-                                    <div>
-                                        <i className="fas fa-map-pin fa-2x red" 
-                                        onClick={() => {
-                                            console.log(crime);
-                                            this.setState({popUpInfo: crime})}}></i>
-                                    </div>
-                            </Marker>
-                        ))
-                    }
 
 
                     <div className="fullscreen">
@@ -134,7 +196,7 @@ class Map extends React.Component{
                         <NavigationControl />
                     </div>
 
-                    <Controller updateView = {this.updateView}/>
+                    <Controller updateView = {this.updateView} updateDataView = {this.updateDataView} updateMarker = {this.renderMarkers} data={this.state.data}/>
                 </ReactMapGL>
 
             </div>
