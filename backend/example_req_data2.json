@@ -1,0 +1,10 @@
+{
+	"crime": {
+		"crimecode" : {
+			"is": ["3LK", "1A", null]
+		},
+		"inside_outside" : {
+			"is": ["I"]
+		}
+	}
+}
