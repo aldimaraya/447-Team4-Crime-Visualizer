@@ -18,7 +18,7 @@ const axios = require('axios').default;
 const MAPBOXTOKEN = 'pk.eyJ1IjoiaWRsYSIsImEiOiJjazB2OHNpOXQwNmptM2JsYWFnczBydDA4In0.nWfSkM6z87tzePEXlxENew';
 
 //Update to reflect backend endpoint
-const hostName = 'http://127.0.0.1:5000/db/fetchall';
+const hostName = 'http://127.0.0.1:5000';
 
 class Map extends React.Component{
     
@@ -40,11 +40,25 @@ class Map extends React.Component{
     }
 
     componentDidMount(){
-        axios.get(hostName)
+
+        var myFilters = {
+            crime: {
+              crimedate: { after: "01/31/2012" },
+              crimetime: { after: "14:00:00", before: "18:00:00" },
+              premise: { is: ["ALLEY", "BAR"] }
+            }
+          }
+
+        console.log(myFilters);
+    
+
+        console.log("Retrieving data...");
+
+        axios.post(hostName + '/db/filter/', myFilters)
             .then((response) => {
                 console.log("Data successfully retrieved");
-                console.log(response.data);
-                this.setState({data: response.data, isLoading:false});
+                console.log(response.data['crime']);
+                this.setState({data: response.data['crime'], isLoading:false});
                 this.setState({heatmapdata: dataToHeatmap(response.data)});
             })
             .catch((error) => {
@@ -66,10 +80,12 @@ class Map extends React.Component{
               closeOnClick={false}
               onClose={() => this.setState({popUpInfo: null})}
             >
+            
+            <div className = "pop">
+                <p>Offense: {popUpInfo.description}<br></br>
+                Location: {popUpInfo.location}</p>
+            </div>
 
-            <p>Offense: {popUpInfo.description}<br></br>
-               Location: {popUpInfo.location}</p>
-              
             </Popup>
           )
         );
