@@ -6,29 +6,46 @@ import {
     HorizontalGridLines,
     VerticalBarSeries,
     DiscreteColorLegend,
+    RadialChart,
+    ArcSeries,
+    LabelSeries,
+    Hint
   } from 'react-vis';
 import React, {Component} from 'react';
+
+const RAD = Math.PI*2;
 
 class Graphs extends Component{
   constructor(props){
     super(props);
 
     this.state = {
-      data: [],
+      weaponData: [
+        {angle0: 0, angle: 0.5136*RAD, radius: 150, radius0: 0, color: "#86bbd8", label: "Firearms"},
+        {angle0: 0.5136*RAD, angle: 0.7227*RAD, radius: 150, radius0: 0, color: "#f6ae2d", label: "Other"},
+        {angle0: 0.7227*RAD, angle: 0.9091*RAD, radius: 150, radius0: 0, color: "#758e4f", label: "Knife"},
+        {angle0: 0.9091*RAD, angle: RAD, radius: 150, radius0: 0, color: "#f26419", label: "Hands"},
+      ],
+      timeDate: [
+        {x: "January", y: 10}
+      ],
+      value: ''
     }
   }
 
   render(){
+    const {value} = this.state;
     return(
       <div>
+
       <XYPlot
-          className="clustered-stacked-bar-chart-example"
+          className="bar-chart-of-all-crimes"
           xType="ordinal"
-          width={800}
-          height={500}
+          width={700}
+          height={300}
           style={{
             position: 'absolute',
-            marginTop: '20px',
+            top: '90px',
             marginLeft: '60px',
             border: '1px solid black',
             padding: '10px',
@@ -36,7 +53,7 @@ class Graphs extends Component{
           }}
         >
           <DiscreteColorLegend
-            style={{position: 'absolute', marginLeft: '750px', marginTop: '60px'}}
+            style={{fontSize: 11, position: 'absolute', marginLeft: '180px', marginTop: '130px'}}
             orientation="horizontal"
             items={[
               {
@@ -81,146 +98,234 @@ class Graphs extends Component{
           <HorizontalGridLines />
           <XAxis />
           <YAxis
-            tickValues={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]}
-            tickFormat={d => ['0','1000','2000','3000', '4000', '5000', '6000', '7000', '8000', '90000', '10000', '11000', '12000', '13000', '14000', '15000', '16000'][d]}
+            title="Instances (thousands)"
           />
           <VerticalBarSeries
             cluster="Northwestern"
             color="#F44336"
             data={[
-              {x: 'Larceny', y: 12801},
-              {x: 'Assault', y: 9703},
-              {x: 'Burglary', y: 6520},
-              {x: 'Auto Theft', y: 4357},
-              {x: 'Robbery', y: 4213},
-              {x: 'Shooting', y: 306},
-              {x: 'Rape', y: 215},
-              {x: 'Homicide', y: 173},
-              {x: 'Arson', y: 221}
+              {x: 'Arson', y: .221},
+              {x: 'Homicide', y: .173},
+              {x: 'Rape', y: .215},
+              {x: 'Shooting', y: .306},
+              {x: 'Robbery', y: 4.213},
+              {x: 'Auto Theft', y: 4.357},
+              {x: 'Burglary', y: 6.520},
+              {x: 'Assault', y: 9.703},
+              {x: 'Larceny', y: 12.801}
             ]}
           />
           <VerticalBarSeries
             cluster="Southwestern"
             color="#673AB7"
             data={[
-              {x: 'Larceny', y: 16031},
-              {x: 'Assault', y: 8426},
-              {x: 'Burglary', y: 4909},
-              {x: 'Auto Theft', y: 2383},
-              {x: 'Robbery', y: 4307},
-              {x: 'Shooting', y: 172},
-              {x: 'Rape', y: 162},
-              {x: 'Homicide', y: 88},
-              {x: 'Arson', y: 84}
+              {x: 'Arson', y: .084},
+              {x: 'Homicide', y: .088},
+              {x: 'Rape', y: .162},
+              {x: 'Shooting', y: .172},
+              {x: 'Robbery', y: 4.307},
+              {x: 'Auto Theft', y: 2.383},
+              {x: 'Burglary', y: 4.909},
+              {x: 'Assault', y: 8.426},
+              {x: 'Larceny', y: 16.031}
             ]}
           />
           <VerticalBarSeries
             cluster="Southern"
             color="#9E9E9E"
             data={[
-              {x: 'Larceny', y: 10137},
-              {x: 'Assault', y: 7799},
-              {x: 'Burglary', y: 4872},
-              {x: 'Auto Theft', y: 2542},
-              {x: 'Robbery', y: 3131},
-              {x: 'Shooting', y: 340},
-              {x: 'Rape', y: 192},
-              {x: 'Homicide', y: 131},
-              {x: 'Arson', y: 154}
+              {x: 'Arson', y: .154},
+              {x: 'Homicide', y: .131},
+              {x: 'Rape', y: .192},
+              {x: 'Shooting', y: .340},
+              {x: 'Robbery', y: 3.131},
+              {x: 'Auto Theft', y: 2.542},
+              {x: 'Burglary', y: 4.872},
+              {x: 'Assault', y: 7.799},
+              {x: 'Larceny', y: 10.137}
             ]}
           />
           <VerticalBarSeries
             cluster="Central"
             color="#4CAF50"
             data={[
-              {x: 'Larceny', y: 12767},
-              {x: 'Assault', y: 7503},
-              {x: 'Burglary', y: 2786},
-              {x: 'Auto Theft', y: 1455},
-              {x: 'Robbery', y: 3467},
-              {x: 'Shooting', y: 192},
-              {x: 'Rape', y: 187},
-              {x: 'Homicide', y: 90},
-              {x: 'Arson', y: 63}
+              {x: 'Arson', y: .063},
+              {x: 'Homicide', y: .090},
+              {x: 'Rape', y: .187},
+              {x: 'Shooting', y: .192},
+              {x: 'Robbery', y: 3.467},
+              {x: 'Auto Theft', y: 1.455},
+              {x: 'Burglary', y: 2.786},
+              {x: 'Assault', y: 7.503},
+              {x: 'Larceny', y: 12.767}
             ]}
           />
           <VerticalBarSeries
             cluster="Northern"
             color="#7CB5D2"
             data={[
-              {x: 'Larceny', y: 11582},
-              {x: 'Assault', y: 5784},
-              {x: 'Burglary', y: 5114},
-              {x: 'Auto Theft', y: 2242},
-              {x: 'Robbery', y: 3147},
-              {x: 'Shooting', y: 197},
-              {x: 'Rape', y: 180},
-              {x: 'Homicide', y: 94},
-              {x: 'Arson', y: 105}
+              {x: 'Arson', y: .105},
+              {x: 'Homicide', y: .094},
+              {x: 'Rape', y: .180},
+              {x: 'Shooting', y: .197},
+              {x: 'Robbery', y: 3.147},
+              {x: 'Auto Theft', y: 2.242},
+              {x: 'Burglary', y: 5.114},
+              {x: 'Assault', y: 5.784},
+              {x: 'Larceny', y: 11.582}
             ]}
           />
           <VerticalBarSeries
             cluster="Southwestern"
             color="#FFEB3B"
             data={[
-              {x: 'Larceny', y: 7607},
-              {x: 'Assault', y: 7735},
-              {x: 'Burglary', y: 4160},
-              {x: 'Auto Theft', y: 2893},
-              {x: 'Robbery', y: 2258},
-              {x: 'Shooting', y: 408},
-              {x: 'Rape', y: 179},
-              {x: 'Homicide', y: 199},
-              {x: 'Arson', y: 162}
+              {x: 'Arson', y: .162},
+              {x: 'Homicide', y: .199},
+              {x: 'Rape', y: .179},
+              {x: 'Shooting', y: .408},
+              {x: 'Robbery', y: 2.258},
+              {x: 'Auto Theft', y: 2.893},
+              {x: 'Burglary', y: 4.160},
+              {x: 'Assault', y: 7.735},
+              {x: 'Larceny', y: 7.607}
             ]}
           />
           <VerticalBarSeries
             cluster="NorthEastern"
             color="#795548"
             data={[
-              {x: 'Larceny', y: 8172},
-              {x: 'Assault', y: 6387},
-              {x: 'Burglary', y: 4012},
-              {x: 'Auto Theft', y: 3042},
-              {x: 'Robbery', y: 2662},
-              {x: 'Shooting', y: 329},
-              {x: 'Rape', y: 160},
-              {x: 'Homicide', y: 174},
-              {x: 'Arson', y: 168}
+              {x: 'Arson', y: .168},
+              {x: 'Homicide', y: .174},
+              {x: 'Rape', y: .160},
+              {x: 'Shooting', y: .329},
+              {x: 'Robbery', y: 2.662},
+              {x: 'Auto Theft', y: 3.042},
+              {x: 'Burglary', y: 4.012},
+              {x: 'Assault', y: 6.387},
+              {x: 'Larceny', y: 8.172}
             ]}
           />
           <VerticalBarSeries
             cluster="Eastern"
             color="#FF5722"
             data={[
-              {x: 'Larceny', y: 6725},
-              {x: 'Assault', y: 7743},
-              {x: 'Burglary', y: 2804},
-              {x: 'Auto Theft', y: 1665},
-              {x: 'Robbery', y: 2123},
-              {x: 'Shooting', y: 424},
-              {x: 'Rape', y: 163},
-              {x: 'Homicide', y: 207},
-              {x: 'Arson', y: 120}
+              {x: 'Arson', y: .120},
+              {x: 'Homicide', y: .207},
+              {x: 'Rape', y: .163},
+              {x: 'Shooting', y: .424},
+              {x: 'Robbery', y: 2.123},
+              {x: 'Auto Theft', y: 1.665},
+              {x: 'Burglary', y: 2.804},
+              {x: 'Assault', y: 7.743},
+              {x: 'Larceny', y: 6.725}
             ]}
           />
           <VerticalBarSeries
             cluster="Western"
             color="#3F51B5"
             data={[
-              {x: 'Larceny', y: 5197},
-              {x: 'Assault', y: 7169},
-              {x: 'Burglary', y: 2636},
-              {x: 'Auto Theft', y: 2250},
-              {x: 'Robbery', y: 1877},
-              {x: 'Shooting', y: 500},
-              {x: 'Rape', y: 142},
-              {x: 'Homicide', y: 237},
-              {x: 'Arson', y: 109}
+              {x: 'Arson', y: .109},
+              {x: 'Homicide', y: .237},
+              {x: 'Rape', y: .142},
+              {x: 'Shooting', y: .500},
+              {x: 'Robbery', y: 1.877},
+              {x: 'Auto Theft', y: 2.250},
+              {x: 'Burglary', y: 2.636},
+              {x: 'Assault', y: 7.169},
+              {x: 'Larceny', y: 5.197}
             ]}
           />
         </XYPlot>
+
+        <XYPlot
+          className="area-chart-of-weapons-used"
+          width={400}
+          height={300}
+          style={{
+            position: 'absolute',
+            top: '90px',
+            marginLeft: '850px',
+            border: '1px solid black',
+            padding: '10px',
+            boxSizing: 'content-box'
+          }}
+          xDomain={[0, 10]}
+          yDomain={[0, 10]}
+        >
+        <ArcSeries
+          animation
+          colorType={'literal'}
+          center={{x: 4.5, y: 4.5}}
+          data={this.state.weaponData.map(row => {
+            if (this.state.value && this.state.value.color === row.color){
+              return {...row, style: {fill: '#a1a1a1'}};
+            }
+            return row;
+          })}
+          onValueMouseOver={row => this.setState({value: row})}
+          onSeriesMouseOut={() => this.setState({value: false})}
+          style={{stroke: '#fff', strokeWidth: 3}}
+        >
+          {value !== false && <Hint value={value.name}/>}
+        </ArcSeries>
+        </XYPlot>
+
+        <XYPlot
+          width={1200}
+          height={250}
+          style={{
+            position: 'absolute',
+            bottom: '50px',
+            marginLeft: '60px',
+            border: '1px solid black',
+            padding: '10px',
+            boxSizing: 'content-box'
+          }}
+          xType="time"
+        >
+        <XAxis />
+        <YAxis />
+        <HorizontalGridLines />
+        <VerticalGridLines />
+        </XYPlot>
+
         </div>
+        // <ArcSeries
+        //   animation
+        //   colorType={'literal'}
+        //   center={{x: 4.5, y: 4.5}}
+        //   data={this.state.weaponData.map(row => {
+        //     if (this.state.value && this.state.value.color === row.color){
+        //       return {...row, style: {fill: '#a1a1a1'}};
+        //     }
+        //     return row;
+        //   })}
+        //   onValueMouseOver={row => this.setState({value: row})}
+        //   onSeriesMouseOut={() => this.setState({value: false})}
+        //   style={{stroke: '#fff', strokeWidth: 3}}
+        // >
+        //   {value !== false && <Hint value={value.name}/>}
+        // </ArcSeries>
+
+        // <RadialChart
+        //   animation
+        //   className={'donut-chart-example'}
+        //   colorType={'literal'}
+        //   data={[
+        //     {angle: 51.36, color: "#86bbd8", label: "Firearm"},
+        //     {angle: 20.90, color: "#758e4f", label: "Knife"},
+        //     {angle: 18.64, color: "#f26419", label: "Hands"},
+        //     {angle: 9.09, color: "#f6ae2d", label: "Other"}
+        //   ]}
+        //   labelsRadiusMultiplier={1.1}
+        //   labelsStyle={{fontSize: 16, color: '#000'}}
+        //   showLabels
+        //   style={{border: '1px solid black', stroke: '#fff', strokeWidth: 4}}
+        //   width={300}
+        //   height={300}
+        // >
+        //   {value !== false && <Hint value={value}/>}
+        // </RadialChart>
     )
   }
 }
