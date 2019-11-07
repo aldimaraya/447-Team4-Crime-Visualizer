@@ -3,13 +3,12 @@ from flask import url_for
 from flask import Flask
 
 from defaults import defaultBlueprint
-from databaseHandler import initDB
 from databaseHandler import dbBlueprint
 from databaseHandler import updateDB
 
 
 # start the database
-initDB()
+#initDB()
 updateDB()
 
 # Init flask application
@@ -19,14 +18,6 @@ application.register_blueprint(defaultBlueprint)
 application.register_blueprint(dbBlueprint)
 
 
-def has_no_empty_params(rule):
-    """
-    Helper function for `get_home()`. dont feel like explaining lol 
-    """
-    defaults = rule.defaults if rule.defaults is not None else ()
-    arguments = rule.arguments if rule.arguments is not None else ()
-    return len(defaults) >= len(arguments)
-    
 @application.route("/", methods=['GET'])
 def get_home():
     """
@@ -37,9 +28,12 @@ def get_home():
     for rule in application.url_map.iter_rules():
         # Filter out rules we can't navigate to in a browser
         # and rules that require parameters
-        if (("GET" in rule.methods) or ("POST" in rule.methods)) and has_no_empty_params(rule):
+        try:
             url = url_for(rule.endpoint, **(rule.defaults or {}))
             links.append(url)
+        except:
+            pass
+        
     # links is now a list of url, endpoint tuples
     for item in sorted(links):
         map_html += "<a href=\"" + item + \
@@ -55,7 +49,7 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
     response.headers.add('Access-Control-Allow-Headers',
                          'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST')
     return response
 
 
@@ -63,13 +57,13 @@ def after_request(response):
 if __name__ == "__main__":
     logging.basicConfig(
         # file = 'backendLogs.log'  # log to file # TODO: UNCOMMENT LINE FOR PRODUCTION
-        level=logging.INFO,
+        level=logging.ERROR,
         format='%(asctime)s.%(msecs)03d,%(levelname)s,%(module)s,%(funcName)s,%(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
     logging.info('Started app')
-    # Setting debug to True enables debug output. This line should be
+    # Setting debug to True enables debug output. TODO: This line should be
     # removed before deploying a production app.
     application.debug = True
-    application.run()
+    application.run() # insert host here?
     logging.info("closing app")

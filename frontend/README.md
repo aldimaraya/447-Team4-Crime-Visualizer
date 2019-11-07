@@ -1,7 +1,7 @@
 ## Dependancies:
 
  * npm version 9
- * npm package: react-scripts
+ * npm package: react-scripts (`npm i react-scripts`)
  
  ## Building front end in windows
  
