@@ -3,14 +3,14 @@ import '@blueprintjs/core/lib/css/blueprint.css'
 import '@blueprintjs/datetime/lib/css/blueprint-datetime.css'
 import '@blueprintjs/icons/lib/css/blueprint-icons.css'
 
-import ReactMapGL, {NavigationControl,FullscreenControl,SVGOverlay,Popup, Marker} from 'react-map-gl';
+import {StaticMap} from 'react-map-gl';
 import React from 'react';
 import Controller from './controllers.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import ClipLoader from 'react-spinners/ClipLoader';
-import {dataToHeatmap} from './temp-dataParser.js';
 import DeckGL from '@deck.gl/react';
-import {HeatmapLayer} from '@deck.gl/aggregation-layers';
+import {ScatterplotLayer} from '@deck.gl/layers';
+import {HeatmapLayer, GridLayer} from '@deck.gl/aggregation-layers';
 
 
 const axios = require('axios').default;
@@ -28,116 +28,148 @@ class Map extends React.Component{
             viewport: {
                 latitude: 39.2904,
                 longitude: -76.6122,
-                zoom: 13
+                zoom: 12,
+                pitch: 45
             },
             data: [],
-            heatmapdata: [],
-            view: "mapbox://styles/mapbox/light-v9",
-            popUpInfo: null,
+            housingVals: [],
+            view: "mapbox://styles/mapbox/dark-v9",
+            hoveredObj: null,
+            xpos: 0,
+            ypos: 0,
             dataview: 'pins',
-            isLoading: true
+            isLoading: true,
+            filter: {}
       };
     }
 
-    componentDidMount(){
-        var myFilters = {
-            crime: {
-              crimedate: { after: "01/31/2012" },
-              crimetime: { after: "14:00:00", before: "18:00:00" },
-              premise: { is: ["ALLEY", "BAR"] }
-            }
-          }
-
-        console.log(myFilters);
-    
-
-        console.log("Retrieving data...");
-
-        axios.post(hostName + '/db/filter/', myFilters)
+    //Function to update the data whenever a new filter is requested
+    updateData = (filter) => {
+        this.setState({filter: filter});
+        axios.post(hostName + '/db/filter/', filter)
             .then((response) => {
                 console.log("Data successfully retrieved");
-                console.log(response.data['crime']);
-                this.setState({data: response.data['crime'], isLoading:false});
-                this.setState({heatmapdata: dataToHeatmap(response.data)});
+                console.log(response.data['realestate']);
+                this.setState({data: response.data['crime'], housingVals: response.data['realestate'], isLoading:false});
+            })
+            .catch((error) => {
+                console.log("Error: ", error);
+                this.setState({isLoading:false});
+        })
+    }
+
+    //Loads initial data with initial query
+    componentDidMount(){
+
+        console.log("Retrieving data...");
+        var filter =  {
+            crime: {
+                crimedate: { after: "01/01/2015" },
+                premise: { is: ["BAR", "ALLEY"] }
+            },
+            realestate: {
+                est_value: {after: 50000}
+            }
+        }
+
+        axios.post(hostName + '/db/filter/', filter)
+            .then((response) => {
+                console.log("Data successfully retrieved");
+                console.log(filter);
+                console.log(response.data['realestate']);
+                this.setState({data: response.data['crime'], housingVals: response.data['realestate'], isLoading:false});
             })
             .catch((error) => {
                 console.log("Error: ", error);
                 this.setState({isLoading:false});
         })
         
+        document.getElementById("map").addEventListener("contextmenu", evt => evt.preventDefault());
     }
 
-    renderPopup() {
-        const {popUpInfo} = this.state;
+    updateTimeframe = (startDate, endDate) => {
+       var newFilter = this.state.filter;
+
+       newFilter.crime.crimedate.after = startDate;
+       newFilter.crime.crimedate.before = endDate;
+        console.log(newFilter);
+       this.updateData(newFilter);
+    }
+
+    _renderHoveredObj = () => {
+        const {xpos, ypos, hoveredObj} = this.state;
     
         return (
-          popUpInfo && (
-            <Popup
-              tipSize={9}
-              anchor="top"
-              longitude={parseFloat(popUpInfo.longitude, 10)}
-              latitude={parseFloat(popUpInfo.latitude, 10)}
-              closeOnClick={false}
-              onClose={() => this.setState({popUpInfo: null})}
-            >
-            
-            <div className = "pop">
-                <p>Offense: {popUpInfo.description}<br></br>
-                Location: {popUpInfo.location}</p>
+          hoveredObj && (
+            <div className = "pop" style={{top: ypos, left: xpos}}>
+                <p>
+                    Offense: {hoveredObj.description}<br></br>
+                    Location: {hoveredObj.location}<br></br>
+                    Date: {hoveredObj.crimedate} <br></br>
+                    Time: {hoveredObj.crimetime}
+                </p>
             </div>
-
-            </Popup>
           )
         );
-      }
-
-    renderMarkers(num) {
-        try{
-            var data = this.state.data.slice(0,num);
-        } catch {
-            console.error("oopsie");
-        }
-
-        //var currentColors = ["fas fa-map-pin fa-1.5x red", "fas fa-map-pin fa-1.5x blue", "fas fa-map-pin fa-1.5x black"];
-
-        return(
-            data && this.state.dataview === 'pins' && (
-                data.map((crime, index) => (
-                    crime.latitude && crime.longitude &&
-                    <Marker
-                        key={`marker-${index}`}
-                        latitude={parseFloat(crime.latitude,10)}
-                        longitude={parseFloat(crime.longitude,10)}>
-                            <div>
-
-                                <i className="fas fa-map-pin fa-1.5x red" //{currentColors[crime.id % 3].toString()} // we can make dynamic colors based on crime properties
-                                onClick={() => {
-                                    console.log(crime);
-                                    this.setState({popUpInfo: crime})}}></i>
-                            </div>
-                    </Marker>
-                ))
-            
-            )
-        )
     }
 
-    renderHeatMap() {
+    _renderLayer = () => {
 
-        console.log(this.state.heatmapdata[0].COORDINATES);
-        const d = this.state.heatmapdata;
-
-        const layer = new HeatmapLayer({
+        //Heatmap layer
+        const hmlayer = new HeatmapLayer({
             id: 'heatmapLayer',
-            getPosition: d[0].COORDINATES,
-            getWeight: d[0].WEIGHT   
+            visible: this.state.dataview == 'heatmap' ? true: false,
+            data: this.state.data,
+            getPosition: d => [d.longitude, d.latitude],
+            getWeight: d => d.total_incidents,
+            intensity: 1,
+            radiusPixels: 300,
+            threshold: 0.8
         });
 
-        console.log("Rendering Heatmap");
-        
-        return(<DeckGL {...this.state.viewport} layers={[layer]} />)
+        //Point layer
+        const sclayer = new ScatterplotLayer({
+            id: 'scatterplot-layer',
+            visible: this.state.dataview == 'pins' ? true: false,
+            data: this.state.data,
+            pickable: true,
+            opacity: 0.8,
+            stroked: true,
+            filled: true,
+            radiusScale: 50,
+            radiusMinPixels: 1,
+            radiusMaxPixels: 100,
+            lineWidthMinPixels: 1,
+            getPosition: d => [d.longitude, d.latitude],
+            getRadius: d => Math.sqrt(d.exits),
+            getFillColor: d => [255, 140, 0],
+            getLineColor: d => [0, 0, 0],
+            onHover: ({object, x, y}) => {
+              this.setState(
+                  {hoveredObj: object, xpos: x, ypos: y}
+              );
+            }
+          });
 
+          //Crime bar layer
+          const barlayer = new GridLayer({
+            id: 'bar-layer',
+            visible: this.state.dataview == 'bar' ? true: false,
+            data: this.state.data,
+            pickable: true,
+            extruded: true,
+            cellSize: 200,
+            elevationScale: 4,
+            getPosition: d => [d.longitude, d.latitude],
+            // onHover: ({object, x, y}) => {
+            //   const tooltip = `${object.position.join(', ')}\nCount: ${object.count}`;
+            //   /* Update tooltip
+            //      http://deck.gl/#/documentation/developer-guide/adding-interactivity?section=example-display-a-tooltip-for-hovered-object
+            //   */
+            // }
+          });
 
+        return [hmlayer, sclayer, barlayer]
     }
 
     updateView = (choice) => {
@@ -160,8 +192,6 @@ class Map extends React.Component{
         this.setState({dataview: choice});
     }
 
-    _onViewportChange = viewport => this.setState({viewport});
-
     render(){
 
         if (this.state.isLoading){
@@ -179,30 +209,28 @@ class Map extends React.Component{
 
         return(
             <div className = 'map'>
+
                 
-                <ReactMapGL
-                    {...this.state.viewport}
+                <Controller updateView = {this.updateView} 
+                    updateDataView = {this.updateDataView} 
+                    updateMarker = {this.renderMarkers} 
+                    updateTime = {this.updateTimeframe}
+                    data={this.state.data}
+                />
+                
+                <DeckGL initialViewState={this.state.viewport}
+                    controller={true} 
                     onViewportChange={(viewport) => this.setState({viewport})}
-                    width="100%"
-                    height="100vh"
-                    mapStyle = {this.state.view}
-                    mapboxApiAccessToken={MAPBOXTOKEN}>
-
-                    {this.renderPopup()}
-                    {this.renderMarkers(200)}
-                    {this.state.dataview == 'heatmap' ? this.renderHeatMap() : null}
-                    
+                    layers = {this._renderLayer()}>
 
 
-                    <div className="fullscreen">
-                        <FullscreenControl />
-                    </div>
-                    <div className="nav">
-                        <NavigationControl />
-                    </div>
+                <StaticMap reuseMaps 
+                    mapboxApiAccessToken = {MAPBOXTOKEN}
+                    mapStyle={this.state.view}/>
 
-                    <Controller updateView = {this.updateView} updateDataView = {this.updateDataView} updateMarker = {this.renderMarkers} data={this.state.data}/>
-                </ReactMapGL>
+                {this._renderHoveredObj()}
+
+                </DeckGL>
 
             </div>
         )
