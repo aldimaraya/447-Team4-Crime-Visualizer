@@ -14,7 +14,7 @@ class Controller extends Component{
             sidebar: false,
             mapStyle:'dark',
             dataStyle:'pins',
-            mintext: 'Expand',
+            mintext: 'Expand Controls',
             numVals: 100,
             dateStart: new Date('January 13, 2012'),
             dateEnd: new Date()
@@ -26,7 +26,7 @@ class Controller extends Component{
     }
 
     toggleSideBar = () => {
-        this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Expand" ? "Collapse" : "Expand"});
+        this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Expand Controls" ? "Collapse Controls" : "Expand Controls"});
     }
 
     // get20points = () => {
