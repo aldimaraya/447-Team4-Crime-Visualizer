@@ -48,7 +48,7 @@ class Graphs extends Component{
   render(){
     const {value} = this.state;
     return(
-      <div>
+      <div className = "graph-wrapper">
 
       <XYPlot
           className="bar-chart-of-all-crimes"
