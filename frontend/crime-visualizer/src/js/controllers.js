@@ -1,9 +1,8 @@
 import Graphs from './graphs.js';
 import React, {Component} from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter, Form, FormGroup, Label, Input} from 'reactstrap';
-import {Button , Collapse, Drawer, Slider} from "@blueprintjs/core";
+import {Form, FormGroup, Label, Input} from 'reactstrap';
+import {Button , Collapse, Drawer, Slider, Card} from "@blueprintjs/core";
 import DatePicker from 'react-date-picker'
-const axios = require('axios').default;
 
 class Controller extends Component{
 
@@ -17,7 +16,9 @@ class Controller extends Component{
             mintext: 'Expand Controls',
             numVals: 100,
             dateStart: new Date('January 13, 2012'),
-            dateEnd: new Date()
+            dateEnd: new Date(),
+
+            style: "bp3-dark"
         }
     }
 
@@ -59,7 +60,7 @@ class Controller extends Component{
     onChangeSlider = number => this.setState({numVals: number})
 
     handleViewChange = changeEvent => {
-        this.setState({mapStyle: changeEvent.target.value});
+        this.setState({mapStyle: changeEvent.target.value, style: changeEvent.target.value == 'dark' ? "bp3-dark" : ""});
         this.props.updateView(changeEvent.target.value);
     }
     handleDataChange = changeEvent => {
@@ -69,7 +70,10 @@ class Controller extends Component{
 
     render(){
         return(
-            <div className = "control-panel">
+            <Card className = {"control-panel " + this.state.style}>
+                <h4 className="bp3-heading">Baltimore Crime Visualizer</h4>
+
+
                 <Button onClick={this.toggleGraphs}>Show Graphs</Button>
                 <Button onClick={this.toggleSideBar}>{this.state.mintext}</Button>
                 {/* <Button onClick={this.get20points}>get 20 POINTS</Button> */}
@@ -159,7 +163,7 @@ class Controller extends Component{
                         <Graphs />
                 </Drawer>
                 
-            </div>
+            </Card>
         )
     }
 }
