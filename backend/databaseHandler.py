@@ -1,25 +1,19 @@
+import dateutil.parser
 import logging
-import re
 import numpy as np
 import pandas as pd
-from sodapy import Socrata
-from sqlalchemy import create_engine
-from sqlalchemy import MetaData
-from sqlalchemy import Table
-from sqlalchemy import Column
-from sqlalchemy import Date
-from sqlalchemy import Time
-from sqlalchemy import Float
-from sqlalchemy import Integer
-from sqlalchemy import String, inspect
-from flask import Blueprint
-from flask import jsonify
-from flask import request
-from json import dumps
-from json import load
-from requests import post as post_request
-import traceback, sys
+import re
+import sys
+import traceback
 from datetime import datetime, timedelta
+from flask import Blueprint, jsonify, request, redirect, Response
+from json import dumps, load
+from os import path
+from requests import post as post_request
+from sodapy import Socrata
+from sqlalchemy import create_engine, inspect, text
+import sqlalchemy
+
 # Constants
 # Crime database...
 _crime_api_uri="https://data.baltimorecity.gov/resource/wsfq-mvij.json"
@@ -37,12 +31,14 @@ RE_DATABASE_COLS = ['OBJECTID', 'TAXBASE', 'BFCVLAND', 'BFCVIMPR', 'LANDEXMP', '
 # related to the local SQL database
 CRIME_TABLE_NAME = 'crime'
 REALESTATE_TABLE_NAME = 'realestate'
+
 SQL_DATABASE_FILE_NAME = 'crime.db'
 SQL_DATABASE_URI = 'sqlite:///' + SQL_DATABASE_FILE_NAME
 
+LAST_FULL_DB_UPDATE_FILENAME = 'LAST_DB_UPDATE_TIMESTAMP'
+
 # the database engine
 DATABASE = None
-
 
 def updateDB():
     """
@@ -54,41 +50,40 @@ def updateDB():
     # IMPORT DATABASE
     if DATABASE is None:
         DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
-    temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
-    doupdate = True
-    try: 
-        f = open('lastupdated','r')
-        contents = f.read()
-        temp = datetime.strptime(contents, "%Y-%m-%d %H:%M:%S.%f")
-        
-        # if the last update was over a day ago, do the update
-        if temp + timedelta(days=1) > datetime.now():
-            doupdate = False
-    except Exception as e:
-        logging.error(e)    
     
+    temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
+
+    # Get the time the database was last updated
+    if path.exists(LAST_FULL_DB_UPDATE_FILENAME): 
+        f = open(LAST_FULL_DB_UPDATE_FILENAME,'r')
+        contents = f.read()
+        try:
+            temp = datetime.strptime(contents, "%Y-%m-%d %H:%M:%S.%f")
+        except:
+            temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
+
     # if the last update was over a day ago, do the update
-    if doupdate:
+    if temp + timedelta(days=1) < datetime.now():
         update_crime_table()
         update_realestate_table()
-        with open('lastupdated','w') as f:
+        with open(LAST_FULL_DB_UPDATE_FILENAME,'w') as f:
             f.write(str(datetime.now()))
     else:
-        logging.warn("Not updating the databases right now")
-    # Print out the current 
+        logging.info("The db's do not need updating right now, as they were last updated on: {}".format(str(temp)))
+    
+    # Print out the current database formatting
     debugging_output = ""
     for table in inspect(DATABASE).get_table_names():
-        debugging_output += "\n************\n" + table + "\n************"
+        debugging_output += "\n****Table Name: " + table + " ****\n"
         for name in inspect(DATABASE).get_columns(table):
             debugging_output += "\n" + name['name'] + " | " + str(name['type'])
-    debugging_output += "\nROWS in " + CRIME_TABLE_NAME + " db: \t" + str(DATABASE.connect().execute("SELECT COUNT(id) FROM " + CRIME_TABLE_NAME).fetchall()[0][0])
-    debugging_output += "\nROWS in " + REALESTATE_TABLE_NAME + " db: \t" + str(DATABASE.connect().execute("SELECT COUNT(uid) FROM " + REALESTATE_TABLE_NAME).fetchall()[0][0])
+        debugging_output += "\nTOTAL ROWS IN TABLE: " + table + ": \t" + str(DATABASE.connect().execute("SELECT COUNT({}) FROM {}".format(inspect(DATABASE).get_columns(table)[0]['name'], table)).fetchall()[0][0])
     logging.warn(debugging_output)
-
+    
 
 def update_crime_table():
     """
-    Updates the crime reports table
+    Updates the crime reports table and inserts it into the database file (replacing an existing table of the same name).
     """
     logging.warn("UPDATING CRIME REPORTS TABLE")
     results = None
@@ -99,13 +94,11 @@ def update_crime_table():
             logging.error("Failed to create Socrata object to receive crime database")
             client.close()
             return
-        # First 10000000 results, returned as JSON from API / converted to Python
-        # list of dictionaries by sodapy.
+        # First 10000000 results, as a python dictionary version of the JSON from API
         results = client.get(CRIME_DATABASE_UID, limit=10000000)
         client.close()
     except Exception as e:
-        logging.error('Fatal error when attempting to retreive crime database')
-        logging.error(e)
+        logging.error('Fatal error when attempting to retreive crime database\n' + traceback.format_exception_only(*sys.exc_info()[0:2])[0])
         
     if results is None or len(results) < 1:
         logging.error("received no data from the crime database")
@@ -121,14 +114,14 @@ def update_crime_table():
     # fixing some formatting inconsistencies
     database['inside_outside'] = database['inside_outside'].replace("(?i)outside", "O",regex=True)
     database['inside_outside'] = database['inside_outside'].replace("(?i)inside", "I",regex=True)
+    #database['datetime'] = pd.to_datetime(database['crimedate'].replace("00:00:00.000","",regex=True)  + database['crimetime'] + ".000")
+
+    database['crimedate'] = pd.to_datetime(database['crimedate'],format="%Y-%m-%dT%H:%M:%S.%f")
     
-    database['crimedate'] = database['crimedate'].replace("T00:00:00.000","",regex=True)
-    # vri_name1 doesn't seem to have any useful information so we can drop that
-    #database = database.drop(['vri_name1'], axis = 1)
-    
+
     #clear out any special funny chars so we can clean the requested data
-    database = database.replace("[#\"\'_]", "",regex=True)
-    database = database.astype({"longitude":float,"latitude":float,"total_incidents":float})
+    database = database.replace("[#\"\'_;]", "",regex=True)
+    database = database.astype({"longitude":float, "latitude":float, "total_incidents":float })
     database.to_sql(CRIME_TABLE_NAME, con=DATABASE, index=True, index_label='id', if_exists='replace')
     logging.info([" ".join([str(x['name']),str(x['type'])]) for x in inspect(DATABASE).get_columns(CRIME_TABLE_NAME)])
 
@@ -137,7 +130,7 @@ def update_realestate_table():
     Updates the realestate market values table
     """
     # TODO if we hit an out of memory error around here, we should fix how we read in the data
-
+    # TODO should prob check to make sure we dont ge r
     logging.warn("UPDATING REALESTATE DB")
     max_req = 1001
     where_stmt = "1=1"
@@ -161,8 +154,7 @@ def update_realestate_table():
         try:
             db_request = post_request(url = RE_DATABASE_URL, data = data)
         except Exception as e:
-            logging.error('Fatal error when attempting to retreive realestate database')
-            logging.error(e)
+            logging.error('Fatal error when attempting to retreive realestate database\n' + traceback.format_exception_only(*sys.exc_info()[0:2])[0])
             return
 
         # double check the return values
@@ -216,12 +208,14 @@ def update_realestate_table():
             temp_database['longitude'] = coords_db['longitude']
             temp_database['latitude'] = coords_db['latitude']
             
+            temp_database['YEAR_BUILD'] = temp_database['YEAR_BUILD'].replace(0, np.nan)
+            temp_database['SALEDATE'] = pd.to_datetime(temp_database['SALEDATE'], errors='ignore', infer_datetime_format=True, format="%m%d%Y")
             # rename column headers
             temp_database = temp_database.rename(columns={'PERMHOME': 'perm_home' , 'SALEDATE': 'date_sold' , 'YEAR_BUILD': 'year_built', 'OWNMDE': 'owner_mode' , 'VACIND':'vacant' , 'STDIRPRE': 'addr_prefix' , 'ST_NAME': 'addr_name' , 'ST_TYPE': 'addr_suffix' , 'BLDG_NO': 'addr_num'}, errors='raise')
             
     
             # add to sql database
-            temp_database = temp_database.astype({"addr_num":int})
+            temp_database = temp_database.astype({"addr_num":int })
             temp_database.to_sql(REALESTATE_TABLE_NAME, con=DATABASE, index=True, index_label='uid', if_exists=if_exists)
 
             # setup vars for next loop. 
@@ -235,17 +229,15 @@ def update_realestate_table():
         logging.error('Missing realestate data')
     
 
-def is_valid_filter_tables(names):
+def is_valid_filter_tables(name):
     """
+    :param name: The name to check
     :returns: True if the table names given exist inside the database, and the database exists. Otherwise, False
     """
-    if DATABASE:
-        for name in names:
-            if name not in DATABASE.table_names():
-                return False
-    else: 
-        return False
-    return True
+    if DATABASE and name in DATABASE.table_names():
+        return True
+    return False
+    
 
 def is_valid_db_header(table, key):
     """
@@ -259,148 +251,240 @@ def is_clean_filter_request(filters):
     """
     # valid values are non sql type words
     # valid filter types: 
+    # TODO: should prob check to make sure that before and after is a single value, and that is is a list
     valid_filter_keys = ["before","after","is","near","radius"]
+    invalid_chars = ['#','\"','\'','_',';']
     for key in filters:
         if str(key) not in valid_filter_keys:
             return False
         elif type(filters[key]) is list:
             for option in filters[key]:
-                if type(option) is str and ";" in option:
+                if type(option) is str and any((c in invalid_chars) for c in option):
                     return False
-        elif type(filters[key]) is str and ";" in filters[key]:
+            if len(filters[key]) == 0:
+                return False
+        elif type(filters[key]) is str and any((c in invalid_chars) for c in filters[key]):
             return False
     return True
 
+def get_expected_type(table, key):
+    """
+    Gets the column datatype in order to help the convert_reqest_to_sql to use the correct format when requesting from the database
+    :param table: the db table name
+    :param key: the column key name to check
+    :returns: The type of the column for the given key in the specified table, or None if the column key does not exist 
+    """
+    for col in inspect(DATABASE).get_columns(table):
+       if col['name'] == key:
+           return col['type']
+    return None
 
 def convert_reqest_to_sql(filters):
     """
     :arg: filters A dictionary with the expected filters
-    :returns: a string with the sql statement corresponding to the filters requested, or None and an error string if invalid
+    :returns: a statements dictionary and a paramters dictionary, and an error statement if one occurred
     """
     statements = {}
+    params = {}
     try:
-        if not is_valid_filter_tables(filters.keys()):
-            return statements, "Invalid table requested: " + str(filters.keys())
-
         for table_name in filters.keys():
-            stmt = "SELECT * FROM " + table_name + " WHERE "
-            where = ""
+            if not is_valid_filter_tables(table_name):
+                return statements, params, "Invalid table requested: " + str(table_name)
 
+            if len(filters[table_name]) == 0:
+                return statements, params, "No filters given"
+
+            stmt = "SELECT * FROM " + table_name 
+            where = ""
+            params[table_name] = {}
             for cols in filters[table_name]:
                 # validate this filter
                 if cols == "limit":
                     continue
                 if not is_valid_db_header(table_name, cols):
-                    return statements, "Invalid table key: " + str(cols)
+                    return statements, params, "Invalid table key: " + str(cols)
                 if not is_clean_filter_request(filters[table_name][cols]):
-                    return statements, "Invalid key value: " + str(cols) + " -> " + str(filters[table_name][cols])
+                    return statements, params, "Invalid value sent for key: " + str(cols) + " -> " + str(filters[table_name][cols])
                 
                 # get the values
                 before = filters[table_name][cols].get("before", None)
                 after = filters[table_name][cols].get("after", None)
                 ls = filters[table_name][cols].get("is", None)
-                """
-                if before and type(before) is not float and type(before) is not str:
-                    return statements, "Invalid filter data format: \'before\' requires single value"
-                elif after and type(after) is not float and type(after) is not str:
-                    return statements, "Invalid filter data format: \'after\' requires single value"
-                elif ls and type(ls) is not list:
-                    return statements, "Invalid filter data format: \'is\' requires a list of single values"
-                """
+                
                 # create the `where` part of the sql statment based on the filters given 
-                if 'before' in filters[table_name][cols].keys() and 'after' in filters[table_name][cols].keys():
-                    where += str(cols) + " BETWEEN " 
-                    if type(before) is str or type(after) is str:
-                        where += "\"" + str(after) + "\" AND \"" + str(before) + "\"" 
-                    else:
-                        where += str(after) + " AND " + str(before)
+                expected_type = get_expected_type(table_name, cols).python_type
+                
 
-                elif 'before' in filters[table_name][cols].keys():
-                    where += str(cols) + " <= " 
-                    if type(before) is str:
-                        where += "\"" + str(before) + "\""
+                if 'after' in filters[table_name][cols].keys():
+                    paramname = str(cols) + "_after"
+                    where += str(cols) + " >= :" + paramname
+                    if expected_type is datetime:
+                        params[table_name][paramname] = dateutil.parser.parse(after)
                     else:
-                        where += str(before)
+                        params[table_name][paramname] = after
+                    if 'before' in filters[table_name][cols].keys():
+                        where += " AND "
 
-                elif 'after' in filters[table_name][cols].keys():
-                    where += str(cols) + " >= " 
-                    if type(after) is str:
-                        where += "\"" + str(after) + "\""
+                if 'before' in filters[table_name][cols].keys():
+                    paramname = str(cols) + "_before"
+                    where += str(cols) + " <= :" + paramname
+                    if expected_type is datetime:
+                        params[table_name][paramname] = dateutil.parser.parse(before)
                     else:
-                        where += str(after)
-
-                elif 'is' in filters[table_name][cols].keys():
-                    ls = list(dict.fromkeys(ls))
-                    i = 0
-                    while i < len(ls):
-                        where += str(cols)
-                        if type(ls[i]) is str:
-                            where += " LIKE \"" + str(ls[i]) + "\" "
-                        elif ls[i] is None:
-                            where += " IS NULL "
-                        else:
-                            where += " = " + str(ls[i])
-                        i += 1
-                        if i < len(ls):
-                            where += " OR "
+                        params[table_name][paramname] = before
+                
+                if 'is' in filters[table_name][cols].keys() and len(filters[table_name][cols]['is']) > 0:
+                    # convert the is to be in the format of: ' col IN (val1, val2, ..., valN) and also replace None with NULL    
+                    non_null_vals = tuple([i for i in filters[table_name][cols]['is'] if i is not None])
+                    if len(non_null_vals) > 0:
+                        non_null_vals = str(non_null_vals).replace(",)",")")
+                    else:
+                        non_null_vals = ""
+                    if None in filters[table_name][cols]['is']:
+                        if not(non_null_vals is ""):
+                            non_null_vals = "{cols} IN {nnv} OR".format(cols=str(cols), nn=non_null_vals)
+                        where += "({nnv} {cols} IS NULL)".format(nnv=non_null_vals, cols=str(cols))
+                    else:
+                        where += " {} IN {} ".format(str(cols), non_null_vals)
 
                 if len(where) > 0:
                     # `and`, to intersect with the next filter
                     where += " AND "
-                else:
-                    logging.error("??? " + cols)
-            statements[table_name] = stmt + where[:-5]
-        return statements, None
+
+            if len(where) > 5:
+                statements[table_name] = stmt + " WHERE " + where[:-5]
+            else:
+                statements[table_name] = stmt
+
+        
+        return statements, params, None
 
     except Exception as e:
-        # TODO: REMOVE THE TRACEBACK PRINTING FOR DEPLOYMENT
-        exc_type, exc_value, exc_traceback = sys.exc_info()
-        traceback.print_exception(exc_type, exc_value, exc_traceback, limit=2, file=sys.stdout)
-        logging.error(e)
-        return None, "Something went wrong while attempting to convert the request into an sql statement"
+        err_msg = "Something went wrong while attempting to convert the request into an sql statement\n"
+        logging.error(err_msg + traceback.format_exception_only(*sys.exc_info()[0:2])[0])
+        return None, None, err_msg
 
 # The blueprint
 dbBlueprint = Blueprint('db', __name__)
 
-@dbBlueprint.route("/db/filter/", methods=['POST'])
+@dbBlueprint.route("/db/filter/", methods=['GET','POST'])
 def db_filterdata():
     """
     :returns: the filtered data corresponding to the requested filter
     """
-    # get post request data as json
-    filter_request = request.get_json()
+    # TODO: Remove this silly return of readme when production
+    if request.method != 'POST':
+        f = open('README.md','r')
+        readme = f.read()
+        f.close()
+        return Response(readme, mimetype='text/plain')
+    else:
+            
+        # get post request data as json
+        filter_request = request.get_json()
 
-    # data validation
-    if type(filter_request) is not dict:
-        return jsonify(error=str("Invalid request, requires a dictionary set"))
+        # data validation
+        if type(filter_request) is not dict:
+            return jsonify(error=str("Invalid request, requires a dictionary set"))
+        
+        if len(filter_request.keys()) == 0:
+            return jsonify(error=str("No filters requested"))
+
+        sql_stmts, params, err = convert_reqest_to_sql(filter_request)
+
+        if err is not None:
+            logging.error(err)
+            return jsonify(error=str(err))
+
+        if DATABASE:
+            conn = DATABASE.connect()
+            try: 
+                json_results = {}
+                for tbl_filter in sql_stmts.keys():
+                    limit = filter_request[tbl_filter].get('limit',None)
+                    if limit is not None and type(limit) is int:
+                        result = conn.execute(text(sql_stmts[tbl_filter]).bindparams(**params[tbl_filter])).fetchmany(limit)
+                    else:
+                        result = conn.execute(text(sql_stmts[tbl_filter]).bindparams(**params[tbl_filter])).fetchall()
+
+                    logging.info("\nQUERY: " + str(sql_stmts[tbl_filter]) + "\nParams:" + str(params[tbl_filter]) + "\nResults: " + str(len(result)))
+                    json_results[tbl_filter] = [dict(r) for r in result]
+                return dumps(json_results)
+            except Exception as e:
+                logging.error(traceback.format_exception_only(*sys.exc_info()[0:2])[0])
+                return jsonify(error=str(e))
+        else:
+            return jsonify(error=str("DATABASE has not been initalized yet")), 404
+
+@dbBlueprint.route("/info/tables/", methods=['GET'])
+def info_tables():
+    """
+    Gets the tables and the description for what they do.
+    """
+    hardcoded_table_desc = {
+        CRIME_TABLE_NAME:"A database released by the Baltimore Police Department containing reported crimes from Baltimore City.",
+        REALESTATE_TABLE_NAME: "A database containing realestae property values based on data given by the State Department of Assessments & Taxation"
+    }
+    ret = []
+    if DATABASE:
+        for table in inspect(DATABASE).get_table_names():
+            ret.append({"name":table, "description":hardcoded_table_desc[table]})
+        return jsonify(ret)
+    else:
+        return jsonify(error=str("DATABASE has not been initalized yet"))
     
-    if len(filter_request.keys()) == 0:
-        return jsonify(error=str("No filters requested"))
+        
+    
+@dbBlueprint.route("/info/tables/<table_name>/", methods=['GET'])
+def info_table_cols(table_name):
+    """
+    Gets the column/headers for a specific table. If `table_name` is unkown, then we redirect to `/info/tables/`.
 
-    sql_stmts, err = convert_reqest_to_sql(filter_request)
+    Args: 
+        table_name: The name of the table to get.
+    Returns:
+        a jsonified list of headers and datatypes
+    """
+    if not is_valid_filter_tables(table_name):
+        return redirect('/info/tables/')
+    else:
+        ret = []
+        for name in inspect(DATABASE).get_columns(table_name):
+            #TODO: explain what each column does?
+            ret.append({'name':name['name'].replace("\"",""),'type':name['type'].python_type.__name__})
+        return jsonify(ret)
 
-    if err is not None:
-        logging.error(err)
-        return jsonify(error=str(err))
-
+@dbBlueprint.route("/info/tables/<table_name>/<col>", methods=['GET'])
+def info_col_uniques(table_name,col):
+    """
+    Gets a list of unique values (for the columns that have under 100 uniques)
+    :returns: A dictionary object with the following key value pairs:
+        count - the number of unique values
+        type - the python datatype of the column
+        nullable - if there are null values in this column
+        values - appears when there is less than 256 uniques with a list of the unique values, not included when type is numerical 
+        min - appears when when type is numerical or there is greater than 256 uniques. Is the minimum of the column
+        max - appears when when type is numerical or there is greater than 256 uniques. Is the maximum of the column
+    """
+    if not is_valid_filter_tables(table_name):
+        return redirect('/info/tables/')
+    if not is_valid_db_header(table_name, col):
+        return jsonify(error=str("Invalid table key: " + str(col)))
     if DATABASE:
         conn = DATABASE.connect()
-        try: 
-            json_results = {}
-            for tbl_filter in sql_stmts.keys():
-                limit = filter_request[tbl_filter].get('limit',None)
-
-                if limit is not None and type(limit) is int:
-                    result = conn.execute(sql_stmts[tbl_filter]).fetchmany(limit)
-                else:
-                    result = conn.execute(sql_stmts[tbl_filter]).fetchall()
-                
-                logging.info("run: " + sql_stmts[tbl_filter] + " results: ", len(result))
-                json_results[tbl_filter] = [dict(r) for r in result]
-            return dumps(json_results)
-        except Exception as e:
-            logging.error(e)
-            return jsonify(error=str(e))
+        stmt = "SELECT DISTINCT {} FROM {}".format(col, table_name)
+        json_results = {}
+        result = {}
+        result['values'] = [r[col] for r in conn.execute(stmt).fetchall()]
+        result['count'] = len(result['values'])
+        result['type'] = get_expected_type(table_name, col).python_type.__name__
+        result['nullable'] = None in result['values']
+        if len(result['values'] ) > 256 or get_expected_type(table_name, col).python_type in [int, float, complex, datetime]:
+            result['max'] = max([x for x in result['values'] if x is not None])
+            result['min'] = min([x for x in result['values'] if x is not None])
+            del result['values']
+            #return jsonify("too many uniques?")
+        return jsonify(result)
     else:
         return jsonify(error=str("DATABASE has not been initalized yet")), 404
-
+    return jsonify(error=str("NOT IMPLEMENTED YET"))
