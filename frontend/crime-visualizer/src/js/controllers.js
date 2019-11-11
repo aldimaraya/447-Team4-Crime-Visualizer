@@ -12,10 +12,11 @@ class Controller extends Component{
         this.state = {
             popup: false,
             sidebar: false,
-            mapStyle:'light',
+            mapStyle:'dark',
             dataStyle:'pins',
-            mintext: 'Expand',
-            dateStart: new Date('January 1, 1998'),
+            mintext: 'Expand Controls',
+            numVals: 100,
+            dateStart: new Date('January 13, 2012'),
             dateEnd: new Date()
         }
     }
@@ -25,36 +26,42 @@ class Controller extends Component{
     }
 
     toggleSideBar = () => {
-        this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Expand" ? "Collapse" : "Expand"});
+        this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Expand Controls" ? "Collapse Controls" : "Expand Controls"});
     }
 
-    get20points = () => {
-        // get the users filters somehow, we hardcoded these filters in for now
-        var myFilterSelection = {crime:{limit:20, id:{after:100}}}
+    // get20points = () => {
+    //     // get the users filters somehow, we hardcoded these filters in for now
+    //     var myFilterSelection = {crime:{limit:20, id:{after:100}}}
 
-        // get the data from the backend
-        axios.post('http://127.0.0.1:5000/db/filter/', myFilterSelection)
-        .then((response) => {
-            console.log("Data successfully retrieved");
-            console.log(response.data);
-            this.setState({data: response.data['crime'], isLoading:false});
-        })
-        .catch(function (error) {
-            console.log("Error: ", error);
-        })
+    //     // get the data from the backend
+    //     axios.post('http://127.0.0.1:5000/db/filter/', myFilterSelection)
+    //     .then((response) => {
+    //         console.log("Data successfully retrieved");
+    //         console.log(response.data);
+    //         this.setState({data: response.data['crime'], isLoading:false});
+    //     })
+    //     .catch(function (error) {
+    //         console.log("Error: ", error);
+    //     })
+    // }
+
+    formatDate = d => {
+        return (d.getMonth()+1).toString() + '/' + d.getDate().toString() + '/' + d.getFullYear().toString();
     }
 
-    onChangeStart = dateStart => this.setState({ dateStart })
+    onChangeStart = dateStart => {
+        this.setState({ dateStart });
+        this.props.updateTime(this.formatDate(dateStart), this.formatDate(this.state.dateEnd));
+    }
 
     onChangeEnd = dateEnd => this.setState({dateEnd})
 
-    onChangeSlider = number => this.props.updateMarker(number)
+    onChangeSlider = number => this.setState({numVals: number})
 
     handleViewChange = changeEvent => {
         this.setState({mapStyle: changeEvent.target.value});
         this.props.updateView(changeEvent.target.value);
     }
-
     handleDataChange = changeEvent => {
         this.setState({dataStyle: changeEvent.target.value});
         this.props.updateDataView(changeEvent.target.value);
@@ -65,12 +72,12 @@ class Controller extends Component{
             <div className = "control-panel">
                 <Button onClick={this.toggleGraphs}>Show Graphs</Button>
                 <Button onClick={this.toggleSideBar}>{this.state.mintext}</Button>
-                <Button onClick={this.get20points}>get 20 POINTS</Button>
+                {/* <Button onClick={this.get20points}>get 20 POINTS</Button> */}
                 <Collapse isOpen={this.state.sidebar}>
                     <div className = "cont">
                     <Form>
                         <FormGroup>
-                            <h4 class="bp3-heading">Map Styles:</h4>
+                            <h4 className="bp3-heading">Map Styles:</h4>
                             <FormGroup check>
                                 <Label check>
                                 <Input type="radio" name="radio1" value={'light'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'light'}/>{' '}
@@ -94,7 +101,7 @@ class Controller extends Component{
 
                     <Form>
                         <FormGroup>
-                            <h4 class="bp3-heading"><br/>Data Styles:</h4>
+                            <h4 className="bp3-heading"><br/>Data Styles:</h4>
                             <FormGroup check>
                                 <Label check>
                                 <Input type="radio" name="radio1" value={'pins'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'pins'}/>{' '}
@@ -107,10 +114,16 @@ class Controller extends Component{
                                     Heatmap
                                 </Label>
                             </FormGroup>
+                            <FormGroup check>
+                                <Label check>
+                                <Input type="radio" name="radio1" value={'bar'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'bar'}/>{' '}
+                                    Bar Graph
+                                </Label>
+                            </FormGroup>
                         </FormGroup>
                     </Form>
 
-                    <h4 class="bp3-heading"><br/>Time Picker:</h4>
+                    <h4 className="bp3-heading"><br/>Time Picker:</h4>
                     <label>from  </label>
                     <DatePicker 
                         onChange = {this.onChangeStart}
@@ -125,12 +138,13 @@ class Controller extends Component{
 
                 <h4 class="bp3-heading"><br/>Data Points:</h4>
 
-                <Slider initialValue = {200}
-                    max={this.props.data.length}
+                <Slider initialValue = {this.state.numVals}
+                    value={this.state.numVals}
+                    max={1000}
                     min={0}
-                    labelStepSize = {100}
+                    labelStepSize = {200}
                     onChange={this.onChangeSlider}
-                    onMouseUp={this.handleSubmit} 
+                    // onMouseUp={this.handleSubmit} 
                     >
 
                 </Slider>
