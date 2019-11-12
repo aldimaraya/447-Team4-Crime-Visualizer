@@ -59,8 +59,8 @@ Column info for table `crime`:
 | NAME | TYPE | DESCRIPTION | Formatting | Filters |
 |-------------------|-------|-------------------------------------------------------------------------------------|--------------------------------------------|-------------------------|
 | `id` | INT | The uid of a row in the database *(A row's UID may change after a database update)* | Integer, starting at 1 | `before`, `after`, `is` |
-| `crimedate` | STR | The date of the crime. | `"MM/DD/YYYY"` | `before`, `after`, `is` |
-| `crimetime` | STR | The time of the crime. | `"HH:MM:ss"` (24 hour format) | `before`, `after`, `is` |
+| `crimedate` | DATETIME | The date of the crime. | `"MM/DD/YYY"` or any valid string containing a date stamp. | `before`, `after`, `is` |
+| `crimetime` | STR | The time of the crime. | `"HH:MM:SS"` (24 hour format) | `before`, `after`, `is` | **BROKEN - FOR SOME REASON "0" > "1" IN SQL**
 | `crimecode` | STR | The crime code. | A digit followed by one or more characters | `is` |
 | `location` | STR | The nearest address to the crime report. |  | `is` |
 | `description` | STR | A basic description of the crime. |  | `is` |
@@ -84,8 +84,8 @@ Column info for table `realestate`:
 |-------------------|-------|-------------------------------------------------------------------------------------|--------------------------------------------|-------------------------|
 | `uid` | BIGINT | The unique id of this realestate item  |  | `before`, `after`, `is` |
 | `perm_home` | TEXT | If this is a permanent resedency.  | `N`,`H`,`D`, or `null` | `is` |
-| `date_sold` | TEXT | The date the property was last sold. |  | `before`, `after`, `is` |
-| `year_built` | BIGINT | The year the property was built.  |  | `before`, `after`, `is` |
+| `date_sold` | DATETIME | The date the property was last sold. | `MMDDYYYY` or any valid string containing a date stamp. | `before`, `after`, `is` |
+| `year_built` | BIGINT | The year the property was built.  | `YYYY`, or `null` | `before`, `after`, `is` |
 | `owner_mode` | TEXT | The Ownership Mode (idk)  | `F`,`L`,`null`,`3` | `is` |
 | `vacant` | TEXT | If the property is listed as vacant.  | `Y`,`N`,`null`| `is` |
 | `addr_prefix` | TEXT | The address prefix. |  | `is` |
@@ -137,6 +137,8 @@ To get the data with something such as Axios:
 ```
 axios.post(API_ENDPOINT + '/db/filter/', myFilters)
   .then((response) => {
+      if (response.data.get('error', null)):
+        console.log("Error: " + response.data['error'])
       console.log("Data successfully retrieved");
       console.log("Crime data: ", response.data['crime']);
       console.log("Realestate data: ", response.data['realestate']);

@@ -1,7 +1,7 @@
 import logging
 from flask import url_for
 from flask import Flask
-
+import re
 from defaults import defaultBlueprint
 from databaseHandler import dbBlueprint
 from databaseHandler import updateDB
@@ -28,12 +28,11 @@ def get_home():
     for rule in application.url_map.iter_rules():
         # Filter out rules we can't navigate to in a browser
         # and rules that require parameters
-        try:
-            url = url_for(rule.endpoint, **(rule.defaults or {}))
-            links.append(url)
-        except:
-            pass
-        
+        #re.sub(r'([<](.*?)[>])+','\<\\2\>',str(rule))
+        link = re.sub(r'[<>]','',str(rule))
+        if "static/" not in link:
+            links.append(link)
+
     # links is now a list of url, endpoint tuples
     for item in sorted(links):
         map_html += "<a href=\"" + item + \
@@ -55,15 +54,21 @@ def after_request(response):
 
 # run the app.
 if __name__ == "__main__":
+
     logging.basicConfig(
-        # file = 'backendLogs.log'  # log to file # TODO: UNCOMMENT LINE FOR PRODUCTION
-        level=logging.ERROR,
-        format='%(asctime)s.%(msecs)03d,%(levelname)s,%(module)s,%(funcName)s,%(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
+        filename = 'flaskLogs.log',  # log to file # TODO: UNCOMMENT LINE FOR PRODUCTION
+        filemode = 'a+',
+        level = logging.WARN,
+        format = '%(asctime)s.%(msecs)03d,%(levelname)s,%(module)s,%(funcName)s,%(message)s',
+        datefmt = '%Y-%m-%d %H:%M:%S',
     )
+    logger = logging.getLogger('werkzeug')
+    handler = logging.FileHandler('flaskLogs.log')
+    logger.addHandler(handler)
     logging.info('Started app')
     # Setting debug to True enables debug output. TODO: This line should be
     # removed before deploying a production app.
-    application.debug = True
-    application.run() # insert host here?
+    application.debug = False
+    application.run()
     logging.info("closing app")
+    
