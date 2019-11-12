@@ -29,7 +29,7 @@ class Graphs extends Component{
       ],
       timeData: [
         {x: 1, y: 150},
-        {x: 2, y: 745},
+        {x: 2, y: 256},
         {x: 3, y: 453},
         {x: 4, y: 90},
         {x: 5, y: 789},
@@ -49,7 +49,14 @@ class Graphs extends Component{
     const {value} = this.state;
     return(
       <div>
-
+      <h1
+      style={{
+        position: 'absolute',
+        top: '4vh',
+        left: '3vw',
+        fontWeight: '400'
+      }}
+      >All Crimes by Type for each District</h1>
       <XYPlot
           className="bar-chart-of-all-crimes"
           xType="ordinal"
@@ -57,15 +64,15 @@ class Graphs extends Component{
           height={300}
           style={{
             position: 'absolute',
-            top: '90px',
-            marginLeft: '60px',
+            top: '12vh',
+            marginLeft: '3vw',
             border: '1px solid black',
             padding: '10px',
             boxSizing: 'content-box'
           }}
         >
           <DiscreteColorLegend
-            style={{fontSize: 11, position: 'absolute', marginLeft: '180px', marginTop: '130px'}}
+            style={{fontSize: 11, position: 'absolute', marginLeft: '10vw', marginTop: '18vh'}}
             orientation="horizontal"
             items={[
               {
@@ -249,14 +256,22 @@ class Graphs extends Component{
           />
         </XYPlot>
 
+        <h1
+        style={{
+          position: 'absolute',
+          top: '4vh',
+          right: '8vw',
+          fontWeight: '400'
+        }}
+        >Weapons Used in all Crimes</h1>
         <XYPlot
           className="area-chart-of-weapons-used"
           width={400}
           height={300}
           style={{
             position: 'absolute',
-            top: '90px',
-            marginLeft: '850px',
+            top: '12vh',
+            right: '8vw',
             border: '1px solid black',
             padding: '10px',
             boxSizing: 'content-box'
@@ -265,7 +280,7 @@ class Graphs extends Component{
           yDomain={[0, 10]}
         >
         <DiscreteColorLegend
-          style={{fontSize: 11, position: 'absolute', right: '150px', top: '300px'}}
+          style={{fontSize: 11, position: 'absolute', right: '10vw', top: '42vh'}}
           orientation="horizontal"
           items={[
             {title: 'Firearms', color:'#86bbd8'},
@@ -292,13 +307,21 @@ class Graphs extends Component{
         </ArcSeries>
         </XYPlot>
 
+        <h1
+        style={{
+          position: 'absolute',
+          top: '52vh',
+          left: '3vw',
+          fontWeight: '400'
+        }}
+        >Crimes Occured throughout the Year</h1>
         <XYPlot
           width={1200}
           height={250}
           style={{
             position: 'absolute',
-            bottom: '50px',
-            marginLeft: '60px',
+            top: '60vh',
+            marginLeft: '3vw',
             border: '1px solid black',
             padding: '10px',
             boxSizing: 'content-box'
@@ -309,7 +332,10 @@ class Graphs extends Component{
           tickValues={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
           tickFormat={d => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d]}
         />
-        <YAxis tickValues={[200, 400, 600, 800]}/>
+        <YAxis
+          tickValues={[200, 400, 600, 800]}
+          title="Amount of Crimes (thousands)"
+        />
         <HorizontalGridLines />
         <VerticalGridLines />
         <LineSeries
