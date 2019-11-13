@@ -120,10 +120,10 @@ class Controller extends Component{
                             </div>
 
                         }/>
-   
+
                         <Tab id="filters" title="Filters" panel ={
                             <div className = "cont">
-                                
+
                                 <PFilter updatePremise={this.props.updatePremise}/>
                                 <DateFilter updateDate={this.props.updateDate}/>
 
@@ -132,16 +132,15 @@ class Controller extends Component{
 
                     </Tabs>
                 </Collapse>
-                
+
                 <Drawer isOpen={this.state.popup}
-                    size={Drawer.SIZE_LARGE}
+                    size={'100%'}
                     position = {Position.TOP}
                     className = "bp3-dark">
                         <Button onClick={this.toggleGraphs}>Close</Button>
-                        <legend>Graphs</legend>
                         <Graphs style={this.state.style} />
                 </Drawer>
-                
+
             </Card>
         )
     }
