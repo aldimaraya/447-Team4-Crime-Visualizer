@@ -13,6 +13,7 @@ import {
     Hint
   } from 'react-vis';
 import React, {Component} from 'react';
+import '../css/graph.css';
 
 const RAD = Math.PI*2;
 
@@ -29,9 +30,9 @@ class Graphs extends Component{
       ],
       timeData: [
         {x: 1, y: 150},
-        {x: 2, y: 745},
+        {x: 2, y: 255},
         {x: 3, y: 453},
-        {x: 4, y: 90},
+        {x: 4, y: 390},
         {x: 5, y: 789},
         {x: 6, y: 509},
         {x: 7, y: 325},
@@ -48,24 +49,20 @@ class Graphs extends Component{
   render(){
     const {value} = this.state;
     return(
-      <div className = "graph-wrapper">
+      <div id="graph-wrapper">
 
+      <div id="bar-chart" className="graph">
+      <h1 id="bar-chart-title">All Crimes by Type in each District</h1>
       <XYPlot
-          className="bar-chart-of-all-crimes"
           xType="ordinal"
+
+          // will eventually be solely in CSS file but for now (i.e. the demo), this stays
           width={700}
           height={300}
-          style={{
-            position: 'absolute',
-            top: '90px',
-            marginLeft: '60px',
-            border: '1px solid black',
-            padding: '10px',
-            boxSizing: 'content-box'
-          }}
+          // ********************************************* //
         >
           <DiscreteColorLegend
-            style={{fontSize: 11, position: 'absolute', marginLeft: '180px', marginTop: '130px'}}
+            style={{fontSize: 11, position: 'absolute', left: '8vw', top: '14vh'}}
             orientation="horizontal"
             items={[
               {
@@ -110,7 +107,8 @@ class Graphs extends Component{
           <HorizontalGridLines />
           <XAxis />
           <YAxis
-            title="Instances (thousands)"
+            title="Amount of Crimes (thousands)"
+            style={{fontSize: 11}}
           />
           <VerticalBarSeries
             cluster="Northwestern"
@@ -248,24 +246,22 @@ class Graphs extends Component{
             ]}
           />
         </XYPlot>
+      </div>
 
+      <div id="area-chart" className="graph">
+      <h1 id="area-chart-title">Weapons Used in Each District</h1>
         <XYPlot
-          className="area-chart-of-weapons-used"
+
+          // will eventually be solely in CSS file
           width={400}
           height={300}
-          style={{
-            position: 'absolute',
-            top: '90px',
-            marginLeft: '850px',
-            border: '1px solid black',
-            padding: '10px',
-            boxSizing: 'content-box'
-          }}
+          // ********************************************* //
+
           xDomain={[0, 10]}
           yDomain={[0, 10]}
         >
         <DiscreteColorLegend
-          style={{fontSize: 11, position: 'absolute', right: '150px', top: '300px'}}
+          style={{fontSize: 11, position: 'absolute', left: '340px', top: '230px'}}
           orientation="horizontal"
           items={[
             {title: 'Firearms', color:'#86bbd8'},
@@ -277,7 +273,7 @@ class Graphs extends Component{
         <ArcSeries
           animation
           colorType={'literal'}
-          center={{x: 3, y: 4.5}}
+          center={{x: 4, y: 4.5}}
           data={this.state.weaponData.map(row => {
             if (this.state.value && this.state.value.color === row.color){
               return {...row, style: {fill: '#a1a1a1'}};
@@ -291,33 +287,39 @@ class Graphs extends Component{
           {value !== false && <Hint value={value.name}/>}
         </ArcSeries>
         </XYPlot>
+      </div>
 
+      <div id="line-chart" className="graph">
+      <h1 id="line-chart-title">All Crimes throughout the Year</h1>
         <XYPlot
+
+          // will eventually be solely in CSS
           width={1200}
           height={250}
-          style={{
-            position: 'absolute',
-            bottom: '50px',
-            marginLeft: '60px',
-            border: '1px solid black',
-            padding: '10px',
-            boxSizing: 'content-box'
-          }}
+          // ********************************************* //
           xType="linear"
         >
         <XAxis
           tickValues={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
           tickFormat={d => ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d]}
         />
-        <YAxis tickValues={[200, 400, 600, 800]}/>
+        <YAxis
+          tickValues={[200, 400, 600, 800]}
+          title="Amount of Crimes (thousands)"
+          style={{fontSize: 11}}
+        />
         <HorizontalGridLines />
         <VerticalGridLines />
         <LineSeries
+          strokeStyle={'solid'}
+          strokeWidth={2}
           data={this.state.timeData}
+          style={{fill: '#fff'}}
         />
         </XYPlot>
+      </div>
 
-        </div>
+      </div>
     )
   }
 }

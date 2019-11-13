@@ -1,4 +1,53 @@
-.graph-wrapper{
+h1 {
+  position: absolute;
+  font-weight: 400;
+  font-size: 18pt;
+}
+
+#graph-wrapper{
     width: 100%;
     margin: 20px;
+}
+
+.graph {
+  position: absolute;
+  border: 1px solid black;
+  padding: 10px;
+  box-sizing: content-box;
+}
+
+#bar-chart {
+  /* width: 40%;
+  height: 30%; */
+  top: 12vh;
+  left:6vw;
+}
+
+#bar-chart-title {
+  top: -6vh;
+  left: 0;
+}
+
+#area-chart {
+  /* width: 40%;
+  height: 30%; */
+  top: 12vh;
+  left: 58vw;
+}
+
+#area-chart-title {
+  top: -6vh;
+  left: -0.1vw;
+}
+
+#line-chart {
+  /* width: 80%;
+  height: 30%; */
+  left: 6vw;
+  top: 62vh;
+}
+
+#line-chart-title{
+  left: 0vw;
+  top: -6vh;
 }

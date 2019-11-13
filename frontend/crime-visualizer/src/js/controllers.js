@@ -129,13 +129,13 @@ class Controller extends Component{
 
                     <h4 className="bp3-heading"><br/>Time Picker:</h4>
                     <label>from  </label>
-                    <DatePicker 
+                    <DatePicker
                         onChange = {this.onChangeStart}
                         value = {this.state.dateStart}
                     />
                     <br></br>
                     <label>to  </label>
-                    <DatePicker 
+                    <DatePicker
                         onChange = {this.onChangeEnd}
                         value = {this.state.dateEnd}
                     />
@@ -148,21 +148,20 @@ class Controller extends Component{
                     min={0}
                     labelStepSize = {200}
                     onChange={this.onChangeSlider}
-                    // onMouseUp={this.handleSubmit} 
+                    // onMouseUp={this.handleSubmit}
                     >
 
                 </Slider>
 
                 </div>
                 </Collapse>
-                
+
                 <Drawer isOpen={this.state.popup}
                     size={Drawer.SIZE_LARGE}>
                         <Button onClick={this.toggleGraphs}>Close</Button>
-                        <legend>Graphs</legend>
                         <Graphs />
                 </Drawer>
-                
+
             </Card>
         )
     }
