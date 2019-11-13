@@ -134,7 +134,7 @@ class Controller extends Component{
                 </Collapse>
 
                 <Drawer isOpen={this.state.popup}
-                    size={Drawer.SIZE_LARGE}
+                    size={'100%'}
                     position = {Position.TOP}
                     className = "bp3-dark">
                         <Button onClick={this.toggleGraphs}>Close</Button>

@@ -42,7 +42,7 @@ class Graphs extends Component{
         {x: 11, y: 98},
         {x: 12, y: 321}
       ],
-      value: ''
+      value: '',
     }
   }
 
@@ -62,7 +62,7 @@ class Graphs extends Component{
           // ********************************************* //
         >
           <DiscreteColorLegend
-            style={{fontSize: 11, position: 'absolute', left: '8vw', top: '14vh'}}
+            style={{fontSize: 11, position: 'absolute', left: '8vw', top: '14vh', color: '#000'}}
             orientation="horizontal"
             items={[
               {
@@ -261,7 +261,7 @@ class Graphs extends Component{
           yDomain={[0, 10]}
         >
         <DiscreteColorLegend
-          style={{fontSize: 11, position: 'absolute', left: '340px', top: '230px'}}
+          style={{fontSize: 11, position: 'absolute', left: '340px', top: '230px', color: '#000'}}
           orientation="horizontal"
           items={[
             {title: 'Firearms', color:'#86bbd8'},
