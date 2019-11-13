@@ -1,8 +1,8 @@
 import Graphs from './graphs.js';
+import {PFilter, DateFilter} from './filter.js';
 import React, {Component} from 'react';
 import {Form, FormGroup, Label, Input} from 'reactstrap';
-import {Button , Collapse, Drawer, Slider, Card} from "@blueprintjs/core";
-import DatePicker from 'react-date-picker'
+import {Button , Collapse, Drawer, Card, Tab, Tabs, TabId, Position} from "@blueprintjs/core";
 
 class Controller extends Component{
 
@@ -15,10 +15,9 @@ class Controller extends Component{
             dataStyle:'pins',
             mintext: 'Expand Controls',
             numVals: 100,
-            dateStart: new Date('January 13, 2012'),
-            dateEnd: new Date(),
 
-            style: "bp3-dark"
+            style: "bp3-dark",
+            currentTab: "views"
         }
     }
 
@@ -29,22 +28,6 @@ class Controller extends Component{
     toggleSideBar = () => {
         this.setState({sidebar: !this.state.sidebar, mintext: this.state.mintext == "Expand Controls" ? "Collapse Controls" : "Expand Controls"});
     }
-
-    // get20points = () => {
-    //     // get the users filters somehow, we hardcoded these filters in for now
-    //     var myFilterSelection = {crime:{limit:20, id:{after:100}}}
-
-    //     // get the data from the backend
-    //     axios.post('http://127.0.0.1:5000/db/filter/', myFilterSelection)
-    //     .then((response) => {
-    //         console.log("Data successfully retrieved");
-    //         console.log(response.data);
-    //         this.setState({data: response.data['crime'], isLoading:false});
-    //     })
-    //     .catch(function (error) {
-    //         console.log("Error: ", error);
-    //     })
-    // }
 
     formatDate = d => {
         return (d.getMonth()+1).toString() + '/' + d.getDate().toString() + '/' + d.getFullYear().toString();
@@ -63,10 +46,16 @@ class Controller extends Component{
         this.setState({mapStyle: changeEvent.target.value, style: changeEvent.target.value == 'dark' ? "bp3-dark" : ""});
         this.props.updateView(changeEvent.target.value);
     }
+
     handleDataChange = changeEvent => {
         this.setState({dataStyle: changeEvent.target.value});
         this.props.updateDataView(changeEvent.target.value);
     }
+
+    handleTabChange = (currentTab: TabId) => {
+        this.setState({currentTab})
+    }
+
 
     render(){
         return(
@@ -78,6 +67,7 @@ class Controller extends Component{
                 <Button onClick={this.toggleSideBar}>{this.state.mintext}</Button>
                 {/* <Button onClick={this.get20points}>get 20 POINTS</Button> */}
                 <Collapse isOpen={this.state.sidebar}>
+<<<<<<< HEAD
                     <div className = "cont">
                     <Form>
                         <FormGroup>
@@ -154,12 +144,85 @@ class Controller extends Component{
                 </Slider>
 
                 </div>
+=======
+                    <Tabs className = "top-space" onChange={this.handleTabChange} selectedTabId={this.state.currentTab}>
+                        <Tab id="views" title= "Views" panel = {
+
+                            <div className = "cont">
+                            <Form>
+                                <FormGroup>
+                                    <h4 className="bp3-heading">Map Styles:</h4>
+                                    <FormGroup check>
+                                        <Label check>
+                                        <Input type="radio" name="radio1" value={'light'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'light'}/>{' '}
+                                            Light
+                                        </Label>
+                                    </FormGroup>
+                                    <FormGroup check>
+                                        <Label check>
+                                        <Input type="radio" name="radio1" value={'dark'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'dark'}/>{' '}
+                                            Dark
+                                        </Label>
+                                    </FormGroup>
+                                    <FormGroup check disabled>
+                                        <Label check>
+                                        <Input type="radio" name="radio1" value={'satellite'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'satellite'}/>{' '}
+                                            Satellite
+                                        </Label>
+                                    </FormGroup>
+                                </FormGroup>
+                            </Form>
+                            <Form>
+                                <FormGroup>
+                                    <h4 className="bp3-heading"><br/>Data Styles:</h4>
+                                    <FormGroup check>
+                                        <Label check>
+                                        <Input type="radio" name="radio1" value={'pins'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'pins'}/>{' '}
+                                            Pins
+                                        </Label>
+                                    </FormGroup>
+                                    <FormGroup check>
+                                        <Label check>
+                                        <Input type="radio" name="radio1" value={'heatmap'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'heatmap'}/>{' '}
+                                            Heatmap
+                                        </Label>
+                                    </FormGroup>
+                                    <FormGroup check>
+                                        <Label check>
+                                        <Input type="radio" name="radio1" value={'bar'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'bar'}/>{' '}
+                                            Bar Graph
+                                        </Label>
+                                    </FormGroup>
+                                </FormGroup>
+                            </Form>
+                            </div>
+
+                        }/>
+   
+                        <Tab id="filters" title="Filters" panel ={
+                            <div className = "cont">
+                                
+                                <PFilter updatePremise={this.props.updatePremise}/>
+                                <DateFilter updateDate={this.props.updateDate}/>
+
+                            </div>
+                        }/>
+
+                    </Tabs>
+>>>>>>> master
                 </Collapse>
 
                 <Drawer isOpen={this.state.popup}
-                    size={Drawer.SIZE_LARGE}>
+                    size={Drawer.SIZE_LARGE}
+                    position = {Position.TOP}
+                    className = "bp3-dark">
                         <Button onClick={this.toggleGraphs}>Close</Button>
+<<<<<<< HEAD
                         <Graphs />
+=======
+                        <legend>Graphs</legend>
+                        <Graphs style={this.state.style} />
+>>>>>>> master
                 </Drawer>
 
             </Card>
