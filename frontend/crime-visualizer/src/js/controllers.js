@@ -67,84 +67,6 @@ class Controller extends Component{
                 <Button onClick={this.toggleSideBar}>{this.state.mintext}</Button>
                 {/* <Button onClick={this.get20points}>get 20 POINTS</Button> */}
                 <Collapse isOpen={this.state.sidebar}>
-<<<<<<< HEAD
-                    <div className = "cont">
-                    <Form>
-                        <FormGroup>
-                            <h4 className="bp3-heading">Map Styles:</h4>
-                            <FormGroup check>
-                                <Label check>
-                                <Input type="radio" name="radio1" value={'light'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'light'}/>{' '}
-                                    Light
-                                </Label>
-                            </FormGroup>
-                            <FormGroup check>
-                                <Label check>
-                                <Input type="radio" name="radio1" value={'dark'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'dark'}/>{' '}
-                                    Dark
-                                </Label>
-                            </FormGroup>
-                            <FormGroup check disabled>
-                                <Label check>
-                                <Input type="radio" name="radio1" value={'satellite'} onChange = {this.handleViewChange} checked={this.state.mapStyle === 'satellite'}/>{' '}
-                                    Satellite
-                                </Label>
-                            </FormGroup>
-                        </FormGroup>
-                    </Form>
-
-                    <Form>
-                        <FormGroup>
-                            <h4 className="bp3-heading"><br/>Data Styles:</h4>
-                            <FormGroup check>
-                                <Label check>
-                                <Input type="radio" name="radio1" value={'pins'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'pins'}/>{' '}
-                                    Pins
-                                </Label>
-                            </FormGroup>
-                            <FormGroup check>
-                                <Label check>
-                                <Input type="radio" name="radio1" value={'heatmap'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'heatmap'}/>{' '}
-                                    Heatmap
-                                </Label>
-                            </FormGroup>
-                            <FormGroup check>
-                                <Label check>
-                                <Input type="radio" name="radio1" value={'bar'} onChange = {this.handleDataChange} checked={this.state.dataStyle === 'bar'}/>{' '}
-                                    Bar Graph
-                                </Label>
-                            </FormGroup>
-                        </FormGroup>
-                    </Form>
-
-                    <h4 className="bp3-heading"><br/>Time Picker:</h4>
-                    <label>from  </label>
-                    <DatePicker
-                        onChange = {this.onChangeStart}
-                        value = {this.state.dateStart}
-                    />
-                    <br></br>
-                    <label>to  </label>
-                    <DatePicker
-                        onChange = {this.onChangeEnd}
-                        value = {this.state.dateEnd}
-                    />
-
-                <h4 class="bp3-heading"><br/>Data Points:</h4>
-
-                <Slider initialValue = {this.state.numVals}
-                    value={this.state.numVals}
-                    max={1000}
-                    min={0}
-                    labelStepSize = {200}
-                    onChange={this.onChangeSlider}
-                    // onMouseUp={this.handleSubmit}
-                    >
-
-                </Slider>
-
-                </div>
-=======
                     <Tabs className = "top-space" onChange={this.handleTabChange} selectedTabId={this.state.currentTab}>
                         <Tab id="views" title= "Views" panel = {
 
@@ -198,10 +120,10 @@ class Controller extends Component{
                             </div>
 
                         }/>
-   
+
                         <Tab id="filters" title="Filters" panel ={
                             <div className = "cont">
-                                
+
                                 <PFilter updatePremise={this.props.updatePremise}/>
                                 <DateFilter updateDate={this.props.updateDate}/>
 
@@ -209,7 +131,6 @@ class Controller extends Component{
                         }/>
 
                     </Tabs>
->>>>>>> master
                 </Collapse>
 
                 <Drawer isOpen={this.state.popup}
@@ -217,12 +138,7 @@ class Controller extends Component{
                     position = {Position.TOP}
                     className = "bp3-dark">
                         <Button onClick={this.toggleGraphs}>Close</Button>
-<<<<<<< HEAD
-                        <Graphs />
-=======
-                        <legend>Graphs</legend>
                         <Graphs style={this.state.style} />
->>>>>>> master
                 </Drawer>
 
             </Card>
