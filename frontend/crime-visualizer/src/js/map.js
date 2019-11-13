@@ -45,11 +45,12 @@ class Map extends React.Component{
 
     //Function to update the data whenever a new filter is requested
     updateData = (filter) => {
+        console.log(filter);
         this.setState({filter: filter});
         axios.post(hostName + '/db/filter/', filter)
             .then((response) => {
                 console.log("Data successfully retrieved");
-                console.log(response.data['realestate']);
+                console.log(response.data['crime']);
                 this.setState({data: response.data['crime'], housingVals: response.data['realestate'], isLoading:false});
             })
             .catch((error) => {
@@ -64,36 +65,40 @@ class Map extends React.Component{
         console.log("Retrieving data...");
         var filter =  {
             crime: {
-                crimedate: { after: "01/01/2015" },
-                premise: { is: ["BAR", "ALLEY"] }
-            },
-            realestate: {
-                est_value: {after: 50000}
+                crimedate: { after: "08/13/2019" },
+                premise: {is: []}
             }
         }
 
-        axios.post(hostName + '/db/filter/', filter)
-            .then((response) => {
-                console.log("Data successfully retrieved");
-                console.log(filter);
-                console.log(response.data['realestate']);
-                this.setState({data: response.data['crime'], housingVals: response.data['realestate'], isLoading:false});
-            })
-            .catch((error) => {
-                console.log("Error: ", error);
-                this.setState({isLoading:false});
-        })
+        this.updateData(filter);
         
         document.getElementById("map").addEventListener("contextmenu", evt => evt.preventDefault());
     }
 
+    //Update time frame
     updateTimeframe = (startDate, endDate) => {
+        console.log(endDate);
        var newFilter = this.state.filter;
 
        newFilter.crime.crimedate.after = startDate;
        newFilter.crime.crimedate.before = endDate;
-        console.log(newFilter);
+
        this.updateData(newFilter);
+    }
+
+    updatePremise = ( premise ) => {
+        console.log(premise);
+        var newFilter = this.state.filter;
+
+        if(newFilter.crime.premise.is.indexOf(premise) < 0){
+            newFilter.crime.premise.is.push(premise);    
+        }else{
+            newFilter.crime.premise.is.splice(newFilter.crime.premise.is.indexOf(premise), 1);
+        }
+
+        // console.log(newFilter);
+
+        this.updateData(newFilter);
     }
 
     _renderHoveredObj = () => {
@@ -172,6 +177,7 @@ class Map extends React.Component{
         return [hmlayer, sclayer, barlayer]
     }
 
+    //Updates look
     updateView = (choice) => {
         console.log("Calling updateView", choice);
         if (choice == 'light'){
@@ -187,6 +193,7 @@ class Map extends React.Component{
         }
     }
 
+    //Update data projection
     updateDataView = (choice) => {
         console.log(choice);
         this.setState({dataview: choice});
@@ -214,7 +221,8 @@ class Map extends React.Component{
                 <Controller updateView = {this.updateView} 
                     updateDataView = {this.updateDataView} 
                     updateMarker = {this.renderMarkers} 
-                    updateTime = {this.updateTimeframe}
+                    updateDate = {this.updateTimeframe}
+                    updatePremise = {this.updatePremise}
                     data={this.state.data}
                 />
                 

@@ -11,7 +11,7 @@ code {
   position: absolute;
   top: 0;
   left: 0;
-  width: 320px;
+  width: 400px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   padding: 12px 24px;
   margin: 20px;
@@ -52,6 +52,10 @@ code {
 
 .white{
   color: #fff;
+}
+
+.top-space{
+  margin-top: 20px;
 }
 
 .mapboxgl-popup{
