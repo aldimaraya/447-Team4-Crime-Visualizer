@@ -114,7 +114,6 @@ def update_crime_table():
     # fixing some formatting inconsistencies
     database['inside_outside'] = database['inside_outside'].replace("(?i)outside", "O",regex=True)
     database['inside_outside'] = database['inside_outside'].replace("(?i)inside", "I",regex=True)
-    #database['datetime'] = pd.to_datetime(database['crimedate'].replace("00:00:00.000","",regex=True)  + database['crimetime'] + ".000")
 
     database['crimedate'] = pd.to_datetime(database['crimedate'],format="%Y-%m-%dT%H:%M:%S.%f")
     
@@ -165,26 +164,28 @@ def update_realestate_table():
             return
 
         # ensure we received data and have not received all of the data yet
-        if len(results['features']) == 0 or not results.get('exceededTransferLimit', True):
+        if results.get('error', False) or len(results['features']) == 0 or not results.get('exceededTransferLimit', True):
             break
         else:
-            # move the geometry into the the pandas dataframe as its own columns
+
+            temp_table = [x['attributes'] for x in results['features']]
+            
+            last_id = temp_table[-1]['OBJECTID']
+            logging.warn("RECEIVED REALESTATE ID's: " + str(temp_table[0]['OBJECTID']) + " -> " + str(last_id))
+
+            # append the geometry into the the array as its own dict item
             coords_table = [x['geometry']['rings'] for x in results['features']]
-            avgs = []
+            i = 0
             for group in coords_table:
                 groupavg = [0,0]
                 for pair in group:
                     for row in pair:
                         groupavg[0] += row[0]
                         groupavg[1] += row[1]
-                avgs.append([groupavg[0]/len(pair), groupavg[1]/len(pair)])
-            coords_db = pd.DataFrame.from_records(avgs,columns=["longitude","latitude"])
+                temp_table[i]['longitude'] = groupavg[0]/len(pair)
+                temp_table[i]['latitude'] = groupavg[1]/len(pair)
+                i += 1
             
-            # convert the whole database into its own dataframe
-            temp_table = [x['attributes'] for x in results['features']]
-
-            last_id = temp_table[-1]['OBJECTID']
-            logging.warn("RECEIVED REALESTATE ID's: " + str(temp_table[0]['OBJECTID']) + " -> " + str(temp_table[-1]['OBJECTID']))
             temp_database = pd.DataFrame.from_records(temp_table, index="OBJECTID", columns=RE_DATABASE_COLS)
             
             # clean table values
@@ -204,15 +205,12 @@ def update_realestate_table():
             # remove the unnecessary cols
             temp_database = temp_database.drop(["TAXBASE", "ARTAXBAS", "BFCVLAND", "BFCVIMPR", "LANDEXMP" , "IMPREXMP", "CURRLAND", "CURRIMPR", "EXMPLAND", "EXMPIMPR", "FULLCASH", "SALEPRIC"], axis=1)
 
-            # Add coords to rows
-            temp_database['longitude'] = coords_db['longitude']
-            temp_database['latitude'] = coords_db['latitude']
-            
             temp_database['YEAR_BUILD'] = temp_database['YEAR_BUILD'].replace(0, np.nan)
-            temp_database['SALEDATE'] = pd.to_datetime(temp_database['SALEDATE'], errors='ignore', infer_datetime_format=True, format="%m%d%Y")
+            temp_database['SALEDATE'] = pd.to_datetime(temp_database['SALEDATE'], errors='coerce', infer_datetime_format=True, format="%m%d%Y")
+            #temp_database['SALEDATE'] = temp_database['SALEDATE'].replace('NaT', np.nan)
+
             # rename column headers
             temp_database = temp_database.rename(columns={'PERMHOME': 'perm_home' , 'SALEDATE': 'date_sold' , 'YEAR_BUILD': 'year_built', 'OWNMDE': 'owner_mode' , 'VACIND':'vacant' , 'STDIRPRE': 'addr_prefix' , 'ST_NAME': 'addr_name' , 'ST_TYPE': 'addr_suffix' , 'BLDG_NO': 'addr_num'}, errors='raise')
-            
     
             # add to sql database
             temp_database = temp_database.astype({"addr_num":int })
@@ -415,9 +413,45 @@ def db_filterdata():
                 return jsonify(error=str(e))
         else:
             return jsonify(error=str("DATABASE has not been initalized yet")), 404
+            
+@dbBlueprint.route("/info/all", methods=['GET'])
+def build_info_tables():
+    """
+    Gets the tables and the description for what they do.
+    """
+    hardcoded_table_desc = {
+        CRIME_TABLE_NAME:"A database released by the Baltimore Police Department containing reported crimes from Baltimore City.",
+        REALESTATE_TABLE_NAME: "A database containing realestae property values based on data given by the State Department of Assessments & Taxation"
+    }
+    ret = []
+    if DATABASE:
+        conn = DATABASE.connect()
 
+        for table in inspect(DATABASE).get_table_names():
+            # { name, description, filters }
+            tbl_info = {"name":table, "description":hardcoded_table_desc[table], "filters":{}}
+            for name in inspect(DATABASE).get_columns(table):
+                print(name)
+                # filter name: { type, info }
+                filter_name = name['name'].replace("\"","")
+                tbl_info['filters'][filter_name] = {}
+                stmt = "SELECT DISTINCT {} FROM {}".format(filter_name, table)
+                tbl_info['filters'][filter_name]['values'] = [r[filter_name] for r in conn.execute(stmt).fetchall()]
+                tbl_info['filters'][filter_name]['count'] = len(tbl_info['filters'][filter_name]['values'])
+                tbl_info['filters'][filter_name]['type'] = get_expected_type(table, filter_name).python_type.__name__
+                tbl_info['filters'][filter_name]['nullable'] = None in tbl_info['filters'][filter_name]['values']
+                # on a wide range of data, use a max/min 
+                if len(tbl_info['filters'][filter_name]['values']) > 256 or get_expected_type(table, filter_name).python_type in [int, float, complex, datetime]:
+                    tbl_info['filters'][filter_name]['max'] = max([x for x in tbl_info['filters'][filter_name]['values'] if x is not None])
+                    tbl_info['filters'][filter_name]['min'] = min([x for x in tbl_info['filters'][filter_name]['values'] if x is not None])
+                    del tbl_info['filters'][filter_name]['values']
+            ret.append(tbl_info)
+        return jsonify(ret)
+    else:
+        return jsonify(error=str("DATABASE has not been initalized yet"))
+    
 @dbBlueprint.route("/info/tables/", methods=['GET'])
-def info_tables():
+def info_table():
     """
     Gets the tables and the description for what they do.
     """
@@ -432,9 +466,7 @@ def info_tables():
         return jsonify(ret)
     else:
         return jsonify(error=str("DATABASE has not been initalized yet"))
-    
-        
-    
+
 @dbBlueprint.route("/info/tables/<table_name>/", methods=['GET'])
 def info_table_cols(table_name):
     """
@@ -483,7 +515,6 @@ def info_col_uniques(table_name,col):
             result['max'] = max([x for x in result['values'] if x is not None])
             result['min'] = min([x for x in result['values'] if x is not None])
             del result['values']
-            #return jsonify("too many uniques?")
         return jsonify(result)
     else:
         return jsonify(error=str("DATABASE has not been initalized yet")), 404
