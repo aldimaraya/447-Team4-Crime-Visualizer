@@ -48,6 +48,46 @@
 
      `deactivate`
   
+  # TO REQUEST THE AVAILABLE TYPES OF FILTERS:
+  Using an HTTP GET request, visit the path `/info/all` which will return the table names and the filter types and values with the requestable data as json. See the following block for an example.
+  ```
+  [
+  {
+    "description": "A database released by the Baltimore Police Department containing reported crimes from Baltimore City.",
+    "name": "crime",
+    "filters": {
+      "crimecode": {
+        "count": 81,
+        "nullable": false,
+        "type": "str",
+        "values": [
+          "6G",
+          "5A",
+          "3JF",
+          "3AF",
+          ... additional values
+        ]
+      },
+      "crimedate": {
+        "count": 2229,
+        "max": "2019-11-30 00:00:00.000000",
+        "min": "1963-10-30 00:00:00.000000",
+        "nullable": false,
+        "type": "datetime"
+      },
+      "crimetime": {
+        "count": 1479,
+        "max": "23:59:00",
+        "min": "00:00:00",
+        "nullable": true,
+        "type": "str"
+      },
+      ... additional filters
+  },
+  ... additional table info
+]
+  ```  
+
   # TO REQUEST FILTERED DATA FROM THE BACK END:
   ..."/db/filter/" as a **post** request. see the example_req_data.json file to see what the dictionary should look like. 
  
@@ -60,7 +100,7 @@ Column info for table `crime`:
 |-------------------|-------|-------------------------------------------------------------------------------------|--------------------------------------------|-------------------------|
 | `id` | INT | The uid of a row in the database *(A row's UID may change after a database update)* | Integer, starting at 1 | `before`, `after`, `is` |
 | `crimedate` | DATETIME | The date of the crime. | `"MM/DD/YYY"` or any valid string containing a date stamp. | `before`, `after`, `is` |
-| `crimetime` | STR | The time of the crime. | `"HH:MM:SS"` (24 hour format) | `before`, `after`, `is` | **BROKEN - FOR SOME REASON "0" > "1" IN SQL**
+| `crimetime` | DATETIME | The time of the crime. | `"HH:MM:SS"` (24 hour format) | `before`, `after`, `is` |
 | `crimecode` | STR | The crime code. | A digit followed by one or more characters | `is` |
 | `location` | STR | The nearest address to the crime report. |  | `is` |
 | `description` | STR | A basic description of the crime. |  | `is` |
@@ -93,8 +133,7 @@ Column info for table `realestate`:
 | `addr_suffix` | TEXT | The address street type. |  | `is` |
 | `addr_num` | INTEGER | The building number. |  | `is` |
 | `est_value` | FLOAT | The estimated price of the property. |  |  `before`, `after`, `is` |
-| `longitude` | FLOAT | The estimated central longitude of the property. |  `before`, `after`, `is` |
-| `latitude` | FLOAT | The estimated central latitude of the property. |  | `before`, `after`, `is` |
+
 
 
 | Filter | Action | Expecting |
@@ -102,7 +141,7 @@ Column info for table `realestate`:
 | before | Returns all records where the record is less than or equal to the input | Single value -> `"valueXYZ"` |
 | after | Returns all records where the record is greater than or equal to the input | Single value -> `"valueXYZ"` |
 | is | Returns all records that match any value in the input list | List -> `["value1", "value2", ..., "valueN"]` |
-| radius | **not implemented yet** Returns all records in a specific radius to a coordinate point | Object -> `{ "longitude":x, "latitude":y, "radius":z }` |
+
 
 
 ***Notes:*** 
@@ -137,11 +176,12 @@ To get the data with something such as Axios:
 ```
 axios.post(API_ENDPOINT + '/db/filter/', myFilters)
   .then((response) => {
-      if (response.data.get('error', null)):
+      if (response.data.get('error', null)){
         console.log("Error: " + response.data['error'])
-      console.log("Data successfully retrieved");
-      console.log("Crime data: ", response.data['crime']);
-      console.log("Realestate data: ", response.data['realestate']);
+      } else { 
+        console.log("Data successfully retrieved");
+        console.log("Data:", response.data);
+      }
   })
   .catch(function (error) {
       console.log("Error: ", error);
