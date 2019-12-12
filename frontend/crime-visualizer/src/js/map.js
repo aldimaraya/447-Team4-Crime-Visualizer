@@ -39,8 +39,33 @@ class Map extends React.Component{
             ypos: 0,
             dataview: 'pins',
             isLoading: true,
-            filter: {}
+            pin_color: 'premise',
+            filter: {},
+            premise: {},
+            description: {},
+            premise_colors: {},
+            description_colors: {}
       };
+    }
+
+
+    //Loads initial data with initial query
+    componentDidMount(){
+
+        console.log("Retrieving data...");
+        var filter =  {
+            crime: {
+                crimedate: { after: "08/13/2019", before: "12/12/2019"},
+                premise: {is: ["ROW/TOWNHOUSE-OCC","STREET","ALLEY","PARKING LOT-OUTSIDE","LIQUOR STORE","SHED/GARAGE","GAS STATION","APT/CONDO - OCCUPIED","OTHER - OUTSIDE","PARKING LOT-INSIDE","BANK/FINANCIAL INST","CONVENIENCE STORE","HOTEL/MOTEL","SCHOOL","DRUG STORE / MED  BL"]},
+                description: {is: ["LARCENY","BURGLARY","ROBBERY - RESIDENCE","ROBBERY - STREET","LARCENY FROM AUTO","AUTO THEFT","SHOOTING","HOMICIDE","AGG. ASSAULT","COMMON ASSAULT","ROBBERY - COMMERCIAL","ROBBERY - CARJACKING","ARSON","RAPE"]},
+                crimetime: { after: "15:00:00", before: "18:00:00"}
+            }
+        }
+
+        this.updateData(filter);
+        
+        document.getElementById("map").addEventListener("contextmenu", evt => evt.preventDefault());
+        this.setState({isLoading:false});
     }
 
     //Function to update the data whenever a new filter is requested
@@ -51,29 +76,84 @@ class Map extends React.Component{
             .then((response) => {
                 console.log("Data successfully retrieved");
                 console.log(response.data['crime']);
-                this.setState({data: response.data['crime'], housingVals: response.data['realestate'], isLoading:false});
+                this.setState({data: response.data['crime'], housingVals: response.data['realestate']});
+                this.updateStats();
             })
             .catch((error) => {
                 console.log("Error: ", error);
-                this.setState({isLoading:false});
         })
+
+        axios.get(hostName + '/info/tables/crime/premise')
+            .then((response) => {
+                this.assignPremiseColor(response.data.values);
+            })
+
+        axios.get(hostName + '/info/tables/crime/description')
+            .then((response) => {
+                this.assignDescriptionColor(response.data.values);
+            })
     }
 
-    //Loads initial data with initial query
-    componentDidMount(){
-
-        console.log("Retrieving data...");
-        var filter =  {
-            crime: {
-                crimedate: { after: "08/13/2019" },
-                premise: {is: []}
+    assignPremiseColor = (premise) => {
+        console.log(premise);
+        var premiseColor = this.state.premise_colors;
+        premise.forEach((item, index) => {
+            if (!(item in premiseColor)){
+                var count = 0;
+                var color = [];
+                while (count != 3){
+                    var rand = Math.floor(Math.random() * (255));
+                    color.push(rand);
+                    count += 1;
+                }
+                premiseColor[item] = color;
             }
-        }
-
-        this.updateData(filter);
-        
-        document.getElementById("map").addEventListener("contextmenu", evt => evt.preventDefault());
+        });
+        this.setState({premise_colors: premiseColor});
     }
+
+    assignDescriptionColor = (description) => {
+        var descColor = this.state.description_colors;
+        description.forEach((item, index) => {
+            if (!(item in descColor)){
+                var count = 0;
+                var color = [];
+                while (count != 3){
+                    var rand = Math.floor(Math.random() * (255));
+                    color.push(rand);
+                    count += 1;
+                }
+                descColor[item] = color;
+            }
+        });
+        this.setState({description_colors: descColor});
+    }
+
+    updateStats = () => {
+        var premise = {};
+        var description = {};
+        if (!this.props.data){
+            //Premise
+
+            this.state.data.forEach((item, index) => {
+                if (item.premise in premise){
+                    premise[item.premise] += 1;
+                }else{
+                    premise[item.premise] = 1;
+                }
+
+                if (item.description in description){
+                    description[item.description] += 1;
+                }else{
+                    description[item.description] = 1;
+                }
+            });
+            console.log(premise);
+            console.log(description);
+        }
+        this.setState({premise, description});
+    }
+
 
     //Update time frame
     updateTimeframe = (startDate, endDate) => {
@@ -86,6 +166,23 @@ class Map extends React.Component{
        this.updateData(newFilter);
     }
 
+    updateTimeOfDay = (range) => {
+        var newFilter = this.state.filter;
+
+        console.log(newFilter);
+        newFilter.crime.crimetime = {};
+
+        var timeStart = range[0] + ":00:00";
+        var timeEnd = range[1] + ":00:00";
+
+        console.log(timeStart, timeEnd);
+
+        newFilter.crime.crimetime.after = timeStart;
+        newFilter.crime.crimetime.before = timeEnd;
+
+        this.updateData(newFilter);
+    }
+
     updatePremise = ( premise ) => {
         console.log(premise);
         var newFilter = this.state.filter;
@@ -96,9 +193,23 @@ class Map extends React.Component{
             newFilter.crime.premise.is.splice(newFilter.crime.premise.is.indexOf(premise), 1);
         }
 
-        // console.log(newFilter);
+        this.updateData(newFilter);
+    }
+
+    updateDescription = ( description ) => {
+        var newFilter = this.state.filter;
+
+        if(newFilter.crime.description.is.indexOf(description) < 0){
+            newFilter.crime.description.is.push(description);
+        }else{
+            newFilter.crime.description.is.splice(newFilter.crime.description.is.indexOf(description), 1);
+        }
 
         this.updateData(newFilter);
+    }
+
+    updateColor = (mode) => {
+        this.setState({pin_color: mode});
     }
 
     _renderHoveredObj = () => {
@@ -116,6 +227,10 @@ class Map extends React.Component{
             </div>
           )
         );
+    }
+
+    _color = (d) => {
+        return this.state.pin_color === "premise" ? this.state.premise_colors[d.premise] : this.state.description_colors[d.description];
     }
 
     _renderLayer = () => {
@@ -147,7 +262,7 @@ class Map extends React.Component{
             lineWidthMinPixels: 1,
             getPosition: d => [d.longitude, d.latitude],
             getRadius: d => Math.sqrt(d.exits),
-            getFillColor: d => [255, 140, 0],
+            getFillColor: this._color,
             getLineColor: d => [0, 0, 0],
             onHover: ({object, x, y}) => {
               this.setState(
@@ -212,7 +327,7 @@ class Map extends React.Component{
                 />
               </div>
               )
-        }
+        }else{
 
         return(
             <div className = 'map'>
@@ -223,7 +338,15 @@ class Map extends React.Component{
                     updateMarker = {this.renderMarkers} 
                     updateDate = {this.updateTimeframe}
                     updatePremise = {this.updatePremise}
+                    updateDescription = {this.updateDescription}
+                    updateTime = {this.updateTimeOfDay}
+                    updateColor = {this.updateColor}
                     data={this.state.data}
+                    filter={this.state.filter}
+                    premise={this.state.premise}
+                    description={this.state.description}
+                    premise_colors={this.state.premise_colors}
+                    description_colors={this.state.description_colors}
                 />
                 
                 <DeckGL initialViewState={this.state.viewport}
@@ -242,6 +365,7 @@ class Map extends React.Component{
 
             </div>
         )
+        }
     }
 }
 

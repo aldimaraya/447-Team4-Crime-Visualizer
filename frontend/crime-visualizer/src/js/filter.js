@@ -1,39 +1,107 @@
 import React, {Component} from 'react';
-import { Checkbox } from "@blueprintjs/core"; 
+import { Checkbox, RangeSlider, Collapse, Button, Icon } from "@blueprintjs/core"; 
 import { DateRangeInput } from "@blueprintjs/datetime";
+import { IconNames } from "@blueprintjs/icons";
 
 class PFilter extends Component{
     constructor(props){
         super(props);
 
         this.state = {
+            show: true,
+            enabled: {}
         }
+    }
+
+    componentDidMount = () => {
+        const p = Object.keys(this.props.premise).slice(1,16);
+        var enabled = {};
+        p.forEach((item, index) => (
+            enabled[item] = true
+        ))
+
+        this.setState({enabled});
     }
 
     handleEnabledChange = (eventChanged) => {
         this.props.updatePremise(eventChanged.target.id);
+        var enabled = this.state.enabled;
+
+        enabled[eventChanged.target.id] = !enabled[eventChanged.target.id];
+        this.setState({enabled});
+    }
+
+    toggleSection = () => {
+        this.setState({show: !this.state.show});
     }
 
     render(){
+        const p = Object.keys(this.props.premise).slice(1,16);
         return(
             <div>
-                <h4 className="bp3-heading"><br/>Crime Filters:</h4>
-                {/* <Checkbox checked={this.state.isEnabled} label="All" onChange={this.handleEnabledChange} inline={true}/> */}
-                <Checkbox id = "ALLEY" checked={this.state.isEnabled} label="Alley" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id = "BAR" checked={this.state.isEnabled} label="Bar" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id="CAB" checked={this.state.isEnabled} label="Cab" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id = "GARAGE" checked={this.state.isEnabled} label="Garage" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="SHED" checked={this.state.isEnabled} label="Shed" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="PARKING LOT-OUTSIDE" checked={this.state.isEnabled} label="Parking Lot-OUTSIDE" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="PUBLIC BUILDING" checked={this.state.isEnabled} label="Public Building" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="SHOPPING MALLS/CNTR" checked={this.state.isEnabled} label="Shopping Mall" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="DEPARTMENT STORE" checked={this.state.isEnabled} label="Department Store" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="ATM MACHINES" checked={this.state.isEnabled} label="ATM Machines" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="CHURCH" checked={this.state.isEnabled} label="Church" onChange={this.handleEnabledChange} inline={true}/>
-                <Checkbox id ="LIQUOR STORE" checked={this.state.isEnabled} label="Liquor Store" onChange={this.handleEnabledChange} inline={true}/>
+                <h4 className="bp3-heading" onClick={this.toggleSection}><br/>Premise Filters <Icon icon={this.state.show ? "caret-down" : "caret-up"}/></h4>
+                
+
+                <Collapse isOpen={this.state.show}>
+                    {p.map((key, index) => (
+                        <Checkbox id = {key} checked = {this.state.enabled[key]} label={key} onChange={this.handleEnabledChange} inline={true}/>
+                    ))}
+
+                </Collapse>
             </div>
         )
     }
+}
+
+class DFilter extends Component{
+    constructor(props){
+        super(props);
+
+        this.state = {
+            show: false,
+            enabled: {}
+        }
+    }
+
+    componentDidMount = () => {
+        const d = Object.keys(this.props.description);
+        var enabled = {};
+        d.forEach((item, index) => (
+            enabled[item] = true
+        ))
+
+        this.setState({enabled});
+    }
+
+    handleEnabledChange = (eventChanged) => {
+        this.props.updateDescription(eventChanged.target.id);
+        var enabled = this.state.enabled;
+
+        enabled[eventChanged.target.id] = !enabled[eventChanged.target.id];
+        this.setState({enabled});
+    }
+
+    toggleSection = () => {
+        this.setState({show: !this.state.show});
+    }
+
+    render(){
+        const d = Object.keys(this.props.description);
+        return(
+            <div>
+                <h4 className="bp3-heading" onClick={this.toggleSection}><br/>Means Filters <Icon icon={this.state.show ? "caret-down" : "caret-up"}/></h4>
+                
+
+                <Collapse isOpen={this.state.show}>
+                    {d.map((key, index) => (
+                        <Checkbox id = {key} checked = {this.state.enabled[key]} label={key} onChange={this.handleEnabledChange} inline={true}/>
+                    ))}
+
+                </Collapse>
+            </div>
+        )
+    }
+    
 }
 
 class DateFilter extends Component{
@@ -64,7 +132,7 @@ class DateFilter extends Component{
         return(
             <div>
 
-                <h4 className="bp3-heading"><br/>Time Picker:</h4>
+                <h4 className="bp3-heading"><br/>Date Picker:</h4>
                 
                 <DateRangeInput
                     formatDate={date => this.formatDate(date)}
@@ -79,4 +147,39 @@ class DateFilter extends Component{
     }
 }
 
-export {PFilter, DateFilter};
+class TimeFilter extends Component{
+    constructor(props){
+        super(props);
+        this.state = {
+            range: [15,18]
+        }
+    }
+
+    handleTimeChange = (range: NumberRange) => {
+        this.setState({ range });
+        // this.props.updateTime(range);
+    }
+
+    handleTimeRelease = (range: NumberRange) => {
+        this.props.updateTime(range)
+    }
+
+    render(){
+        return(
+            <div>
+                <h4 className ="bp3-heading"><br/>Time Picker (Hours):</h4>
+
+                <RangeSlider
+                    max={24}
+                    min={0}
+                    onChange={this.handleTimeChange}
+                    onRelease={this.handleTimeRelease}
+                    value={this.state.range}
+                    labelStepSize={2}
+                />
+            </div>
+        )
+    }
+}
+
+export {PFilter, DFilter, DateFilter, TimeFilter};
