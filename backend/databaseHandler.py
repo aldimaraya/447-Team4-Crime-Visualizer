@@ -40,6 +40,7 @@ LAST_FULL_DB_UPDATE_FILENAME = 'LAST_DB_UPDATE_TIMESTAMP'
 # the database engine
 DATABASE = None
 
+@dbBlueprint.route("/update", methods=['GET'])
 def updateDB():
     """
     Imports the entire database from the URI, cleans the data, and puts it into
@@ -380,7 +381,7 @@ def db_filterdata():
             
         # get post request data as json
         filter_request = request.get_json()
-
+        logging.error(filter_request)
         # data validation
         if type(filter_request) is not dict:
             return jsonify(error=str("Invalid request, requires a dictionary set"))
