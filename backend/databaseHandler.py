@@ -40,7 +40,6 @@ LAST_FULL_DB_UPDATE_FILENAME = 'LAST_DB_UPDATE_TIMESTAMP'
 # the database engine
 DATABASE = None
 
-@dbBlueprint.route("/update", methods=['GET'])
 def updateDB():
     """
     Imports the entire database from the URI, cleans the data, and puts it into
@@ -520,3 +519,41 @@ def info_col_uniques(table_name,col):
     else:
         return jsonify(error=str("DATABASE has not been initalized yet")), 404
     return jsonify(error=str("NOT IMPLEMENTED YET"))
+
+@dbBlueprint.route("/update", methods=['GET'])
+def requested_db_update():
+    global DATABASE
+
+    # IMPORT DATABASE
+    if DATABASE is None:
+        DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
+    
+    temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
+
+    # Get the time the database was last updated
+    if path.exists(LAST_FULL_DB_UPDATE_FILENAME): 
+        f = open(LAST_FULL_DB_UPDATE_FILENAME,'r')
+        contents = f.read()
+        try:
+            temp = datetime.strptime(contents, "%Y-%m-%d %H:%M:%S.%f")
+        except:
+            temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
+
+    # if the last update was over a day ago, do the update
+    if temp + timedelta(days=1) < datetime.now():
+        update_crime_table()
+        update_realestate_table()
+        with open(LAST_FULL_DB_UPDATE_FILENAME,'w') as f:
+            f.write(str(datetime.now()))
+    else:
+        logging.info("The db's do not need updating right now, as they were last updated on: {}".format(str(temp)))
+    
+    # Print out the current database formatting
+    debugging_output = ""
+    for table in inspect(DATABASE).get_table_names():
+        debugging_output += "\n****Table Name: " + table + " ****\n"
+        for name in inspect(DATABASE).get_columns(table):
+            debugging_output += "\n" + name['name'] + " | " + str(name['type'])
+        debugging_output += "\nTOTAL ROWS IN TABLE: " + table + ": \t" + str(DATABASE.connect().execute("SELECT COUNT({}) FROM {}".format(inspect(DATABASE).get_columns(table)[0]['name'], table)).fetchall()[0][0])
+    logging.warn(debugging_output)
+    return jsonify(debugging_output)
