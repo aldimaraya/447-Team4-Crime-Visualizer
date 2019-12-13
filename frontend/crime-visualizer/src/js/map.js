@@ -175,10 +175,10 @@ class Map extends React.Component{
         var timeStart = range[0] + ":00:00";
         var timeEnd = range[1] + ":00:00";
 
-        console.log(timeStart, timeEnd);
+        console.log(timeStart.padStart(8, '0'), timeEnd.padStart(8, '0'));
 
-        newFilter.crime.crimetime.after = timeStart;
-        newFilter.crime.crimetime.before = timeEnd;
+        newFilter.crime.crimetime.after = timeStart.padStart(8, '0');
+        newFilter.crime.crimetime.before = timeEnd.padStart(8, '0');
 
         this.updateData(newFilter);
     }
