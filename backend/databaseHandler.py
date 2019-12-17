@@ -52,7 +52,8 @@ def updateDB():
         DATABASE = create_engine(SQL_DATABASE_URI, convert_unicode=True)
     
     temp = datetime.strptime("1970-01-01 00:00:00.000", "%Y-%m-%d %H:%M:%S.%f")
-
+    """
+    HOTFIX: DISABLING DATABASE UPDATING BECAUSE SHITS FUCKED YO
     # Get the time the database was last updated
     if path.exists(LAST_FULL_DB_UPDATE_FILENAME): 
         f = open(LAST_FULL_DB_UPDATE_FILENAME,'r')
@@ -70,7 +71,7 @@ def updateDB():
             f.write(str(datetime.now()))
     else:
         logging.info("The db's do not need updating right now, as they were last updated on: {}".format(str(temp)))
-    
+    """
     # Print out the current database formatting
     debugging_output = ""
     for table in inspect(DATABASE).get_table_names():
